@@ -36,7 +36,13 @@ const : this pointer becomes const. This function cannot modify the variables.
 
 Rule of thumb: for performance reasons, use constexpr if possible
 
-## 
+## array vs `std::vector` vs `std::array`
+
+Array is the old, C way of working with arrays. It might be cumbersome, has fixed size, but essentially there is nothing wrong with it.
+
+For convinience, you can use the more modern `std::vector` or `std::array`. General rule is, the vector is more flexible, but worse in performance, so if `std::array` is enough, use that. If you explicitly need `std::vector`, use that.
+
+- 
 
 ## `std::bind`
 
@@ -82,7 +88,7 @@ Thing about performance. If you create an object, and initialize it later, a cop
 
 ## Rules of thumb
 
-There are some basic rules to improve performance. These can always be broken, so use them with understanding the whys and always consider alternatives.
+There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
 
 ### `#include` order
 
@@ -99,8 +105,12 @@ In general, start as local as possible, and gradually go further and bigger and 
 
 ### Variables and values
 
+- Use the smallest suitable variable type. Is there a type that works just like that but occupies smaller memory?
 - If a value can be `constexpr`, it should be. If not, but can be `const`, it should be. Use variables if not.
 - In general, everything that can be `const`, should be `const` (see details later), e.g. function parameters, class methods, iterators, etc.
+- Prefer smart pointers over raw pointers, because of safety. Use raw pointers when you know what you are doing, and you need the performance.
+- `unique_ptr` has lower overhead than `shared_ptr`. Use unique by default, and shared if you need it.
+- For collections, use `std::array` when possible, and `std::vector` only if you need the extra functionality for the worse performance.
 
 ### Funtion and method parameters
 
