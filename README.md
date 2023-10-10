@@ -63,7 +63,16 @@ Thing about performance. If you create an object, and initialize it later, a cop
 - `const_cast`: modifies the constness of the target
 - `reinterpret_cast`: converts pointer to different type without checking or modifying the pointed at data. Just starts to interpret the same data as a different type wihtout any considerations (type punning)
 
+## `std::bind`
 
+Creates a new std function with "predefined" arguments.
+	
+Example: let's assume we have a function called `f`, with 1 integer arugment. `std::bind(f, 3)` returns a function. The returned function has no arguments. If you call this function, it will call `f(3)`.
+	
+Placeholders:
+	
+`f1 = std::bind(f, 3, _1)`, you should call `f1(something)` and something will be substituted to `_1`, therefore `f(3, something)` will be called.
+	
 ## Which one to use
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
@@ -152,17 +161,6 @@ On the other hand
 
 - `#pragma once` is not part of the standard. Most compilers use it, but there is always a slight chance that it will run on an error, while include guard is always guaranteed to work.
 
-
-## `std::bind`
-
-Creates a new std function with "predefined" arguments.
-	
-Example: let's assume we have a function called `f`, with 1 integer arugment. `std::bind(f, 3)` returns a function. The returned function has no arguments. If you call this function, it will call `f(3)`.
-	
-Placeholders:
-	
-`f1 = std::bind(f, 3, _1)`, you should call `f1(something)` and something will be substituted to `_1`, therefore `f(3, something)` will be called.
-	
 ## Rules of thumb
 
 There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
