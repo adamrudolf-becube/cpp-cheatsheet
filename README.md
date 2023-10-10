@@ -74,6 +74,9 @@ Prefer move if you don't have a reson to copy as it's incomparably faster. Ever 
 
 ### How the assignment operator works (`=`)
 
+- If you assign to a new value, it's the move constructor: `MyClass my_object = other;`
+- If you use it with an existing value, it's a move assignment operator: `my_object = other;`
+
 Copies value:
 - If they are value types, e.g. normal int: `int b = a` will have different memory addresses. Changing `b` doesn't change `a`
 - If they are pointers, `MyClass* b = a` will copy the address ("value" of the pointer itself), so they will point to the same data.
@@ -83,7 +86,9 @@ Copies value:
 
 ### Method pre- and postfixes
 
+#### Prefix
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
+- `static`: 
 - ` = 0` : a function is pure virtual and you cannot instantiate an object from this class. You need to derive from it and implement this method. You cannot declare a class abstract explicitly, but any class containing pure virtual methods are abstract. Only virtual functions can be pure virtual.
 - ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the equal operator and copy constructor to prohibit copying)
     - Any use of a deleted function is ill-formed (the program will not compile).
@@ -118,6 +123,12 @@ See more about uniform initialization here: https://www.geeksforgeeks.org/unifor
 #### Some notes abour instantiation
 
 Thing about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. (Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place)
+
+### The `static` keyword
+
+- **Outside class of function** - internal to the translation unit ("private" )
+- **Inside a function** - the value is permanent during the lifetime of the function, if the function is called several times, even recursively, all will share the same instance of that variable
+- **Inside of a class before a function or member** - share memory with all of the instances, so one class has one instance insteas of every object has their own. Static functions don't get the `this` pointer passed to them.
 
 ### casts
 
