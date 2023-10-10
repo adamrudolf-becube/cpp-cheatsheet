@@ -133,7 +133,12 @@ Often there are multiple solutions to the same problem, that look similar, but h
 
 |**`lvalue`**|**`rvalue`**|
 |------------|------------|
-|||
+|Has a name|Has no name|
+|Permanent|Temporary|
+|Example: variable, const, reference|Example: literal, expression (like `3+5`)|
+|Long time ago on the left side of assigment only lvalues could be present|Long time ago on the rvalues could be present only on the right side of an assignment|
+
+You can hae `&&` operator to refer to an rvalue reference. For example `f(Foo&& input)` is a function that expects an rvalue reference.
 
 ### `const` vs `constexpr`
 
