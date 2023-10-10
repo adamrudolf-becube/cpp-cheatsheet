@@ -107,6 +107,12 @@ It doesn't just add consistency, but helps to discover bugs that would hide othe
 
 In general, start as local as possible, and gradually go further and bigger and more global.
 
+### What to include where
+
+- Prefer to include things in the `.cpp` file rather than the `.h`. This helps to reduce compile time. Your clients include the header, so every include the header has, the client needs to pull in. Only include things in the header if you need to. Think about forward declarations as well.
+
+Note, the PIMPL idiom can help to reduce your header code as well.
+
 ### Variables and values
 
 - Use the smallest suitable variable type. Is there a type that works just like that but occupies smaller memory?
