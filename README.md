@@ -136,7 +136,7 @@ Placeholders:
 	
 `f1 = std::bind(f, 3, _1)`, you should call `f1(something)` and something will be substituted to `_1`, therefore `f(3, something)` will be called.
 	
-## Which one to use
+## Which one? The VS topics
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
 
