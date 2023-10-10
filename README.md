@@ -92,6 +92,8 @@ There are some basic rules to improve performance or error proneness. These can 
 
 These rules are subjective and not everyone might agree with them. They can be right.
 
+Note that there are official [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). This part just meant to be a quick checklist for me. Obviously there are many other guidelines here, and mines might overlap or even contradict the core guidelines, I haven't checked.
+
 ### `#include` order
 
 `#include` directives should go from local to global.
