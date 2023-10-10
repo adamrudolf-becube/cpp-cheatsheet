@@ -5,9 +5,9 @@ Quick lookup of arbitrary C++ rules
 During the years I started to write very concise notes of C++ to quickly look up what I was missing. This became a very random set of cheatsheet entries, subjectively representing my learning. I intend this repo to have a permanent, formatted, structured storage for myself, but it can be used (and contributed) by anyone finding it.
 
 ## Pointer basics
-- `*` -> *dereference* a.k.a. "pointed value". E.g. variable `a` is a pointer, `*a` is the value pointed at
+- `*` -> **dereference** a.k.a. "pointed value". E.g. variable `a` is a pointer, `*a` is the value pointed at
 - `*` is also declaring a variable that is meant to a pointer: `int *a` => `a` is a pointer to an `int`
-- `&` *reference* i.e. "address of": `a = 54` -> `&a` is the address, where the value `54` is stored at
+- `&` **reference** i.e. "address of": `a = 54` -> `&a` is the address, where the value `54` is stored at
 
 ## Pass array reference to a function
 
@@ -31,8 +31,8 @@ const : this pointer becomes const. This function cannot modify the variables.
 
 ## `const` vs `constexpr`
 
-- `constexpr`: we know the value *compile time*, compiler can substitute with literal
-- `const`: might be decided *runtime*, but value is decided on assignment, cannot be changed later (actually can, e.g. with `const_cast`)
+- `constexpr`: we know the value **compile time**, compiler can substitute with literal
+- `const`: might be decided **runtime**, but value is decided on assignment, cannot be changed later (actually can, e.g. with `const_cast`)
 
 Rule of thumb: for performance reasons, use constexpr if possible
 
@@ -131,6 +131,22 @@ In general, start as local as possible, and gradually go further and bigger and 
 
 - Every class method that doesn't use members should be placed outside the class. If there is still reason to include it in the class, it should be static. It helps a lot to the compiler and to you when debugging.
 - Every class methos that reads, but doesn't write members, should be marked as `const`
+
+## How the compiler works
+
+Generally there are 3 steps when your C++ code is turned into executable:
+
+1. **Precompiling** - practically turns precompiler directives into generated C++ code the compiler can read. Most commin is the `#include`
+2. **Compiling** - turn C++ code to separate binaries, that don't run standalone, called object fiels (`.o` or `.obj`)
+3. **Linking** - link the object files together, for example resolve called functions that are defined in a different file
+
+We see these in details now.
+
+### Precompiling
+
+### My explanation to myself
+
+
 
 ## Questions
 
