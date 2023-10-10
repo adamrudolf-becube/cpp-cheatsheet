@@ -49,6 +49,37 @@ For convinience, you can use the more modern `std::vector` or `std::array`. Gene
 | Has the same memory address over lifetime (fast) | When you add elements, sometimes it finds a new, bigger place in the heap and copies all the existing data (slow) |
 | Many things decided compile time (e.g. size gets hard coded, `size()` method just returns burnt in value) | Need to calculate everything runtime (slower) |
 
+## `push_back` vs `emplace_back`
+
+Note: the following might not be true to all compiler versions
+
+- Both add a new element to a `std::vector`
+- `push_back` always expects an instance of the type the vector has, `emplace_back` can be used with variadic arguments, directly giving the arguments of the constructor
+- `push_back` always copies the given element to the vector's memory place, while `emplace_back` is able to create it on the place.
+
+Generally, if you add a newly created element to a vector, you should use `emplace_back` with variadic arguments. If you use `push_back`, a new element will be created and then copied to the vector, so 2 creations take place.
+
+Generally, using `emplace_back` is preferred, unless you have explicit reason to use `push_back`.
+
+```cpp
+#include <vector>
+#include <string>
+
+class Dog
+{
+    int age;
+    std::string name;
+public:
+    Dog(int inAge, const std::string& inName) : age(inAge), name(inName) {}
+};
+
+std::vector<Dog> dogs{};
+
+dogs.push_back(Dog{16, "Einstein"}); // Creates a temporary dog, and copies it to the vector
+dogs.emplace_back(Dog{16, "Einstein"}) // Same, creates a temporary dog, and copies it to the vector
+dogs.emplace_back(16, "Einstein"); // Quicker, creates only one object already in the vector
+```
+
 ## Include guard vs `#pragma once`
 
 Both solutions protect from the case when you include the same file twice, causing double definition. These two are mechanisms to ensure, if a certain file has been already included, and is included again, then nothing will happen.
