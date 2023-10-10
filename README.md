@@ -42,7 +42,39 @@ Array is the old, C way of working with arrays. It might be cumbersome, has fixe
 
 For convinience, you can use the more modern `std::vector` or `std::array`. General rule is, the vector is more flexible, but worse in performance, so if `std::array` is enough, use that. If you explicitly need `std::vector`, use that.
 
-- 
+## Include guard vs `#pragma once`
+
+Both solutions protect from the case when you include the same file twice, causing double definition. These two are mechanisms to ensure, if a certain file has been already included, and is included again, then nothing will happen.
+
+You have a header file called `MyClass.h`. An include guard looks this (names might be different):
+
+```cpp
+ifndef _MYCLASS_H_
+#define _MYCLASS_H_
+
+// contents of your file
+
+#endif // _MYCLASS_H_
+```
+
+while the pragma:
+
+```cpp
+#pragma once
+
+// contents of your file
+```
+
+There is no signiicant difference, so best is to follow convention if there is already any. Otherwise, here are the smaller differences:
+
+- `#pragma once` is less code, some would argue that is't easier to read
+- `#pragma once` is one line, so it's harder to make mistakes, e.g. missing `#endif` or misspelling the name of the def
+- `#pragma once` might be slightly quicker for the preprocessor
+
+On the other hand
+
+- `#pragma once` is not part of the standard. Most compilers use it, but there is always a slight chance that it will run on an error, while include guard is always guaranteed to work.
+
 
 ## `std::bind`
 
