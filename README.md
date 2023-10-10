@@ -42,6 +42,13 @@ Array is the old, C way of working with arrays. It might be cumbersome, has fixe
 
 For convinience, you can use the more modern `std::vector` or `std::array`. General rule is, the vector is more flexible, but worse in performance, so if `std::array` is enough, use that. If you explicitly need `std::vector`, use that.
 
+| `std::array`  | `std::vector` |
+| ------------- | ------------- |
+| Fixed size  | Dynamic size  |
+| Allocated on the stack (fast)  | Allocated in the heap (slower) |
+| Has the same memory address over lifetime (fast) | When you add elements, sometimes it finds a new, bigger place in the heap and copies all the existing data (slow) |
+| Many things decided compile time (e.g. size gets hard coded, `size()` method just returns burnt in value) | Need to calculate everything runtime (slower) |
+
 ## Include guard vs `#pragma once`
 
 Both solutions protect from the case when you include the same file twice, causing double definition. These two are mechanisms to ensure, if a certain file has been already included, and is included again, then nothing will happen.
