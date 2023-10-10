@@ -90,11 +90,13 @@ Thing about performance. If you create an object, and initialize it later, a cop
 
 There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
 
+These rules are subjective and not everyone might agree with them. They can be right.
+
 ### `#include` order
 
 `#include` directives should go from local to global.
 
-It doesn't just add consistency, but helps to discover bugs that would hide otherwise. If your local header misses an `#include` directive, the problem migth be shadowed if your client code includes it before the header. Your code might compile, but 1) if you change your `#include`s later, or 2) you include your header somewhere else, the compile error might come up. Using this rule can surface such problems during development:
+It doesn't just add consistency, but helps to discover bugs that would hide otherwise. If your local header misses an `#include` directive, the problem migth be shadowed if your client code includes the missing dependency before your faulty header. Your code might compile, but 1) if you change your `#include`s later, or 2) you include your header somewhere else, the compile error might come up. Using this rule can surface such problems during development:
 
 1. In case of a `.cpp` file, first include is it's own header
 2. Other local headers of your project
