@@ -33,10 +33,24 @@ The functions (in certain cases) the compiler automatically generates for you (f
 
 - **Default constructor** - constructor without parameters and special behaviour: `A() {/*...*/}`
 - **Destructor** - `~A() {/*...*/}` there is only one desctructor, and it cannot have arguments
-- **Copy constructor** - constructor with one parameter with the type of **reference** the class itself: `A(A& other) {/*...*/}`
+- **Copy constructor** - constructor with one parameter with the type of (lvalue) **reference** the class itself: `A(A& other) {/*...*/}`
 - **Copy assignment operator** - `A& operator=(A other)` (obviously strongly connected to copy construction, see differences soon). Might accept the other by value or reference, or as `const` or `volatile`
-- **Move constructor** - similar to the copy
-- **Move assignment operator** - 
+- **Move constructor** - similar to the copy constructor, but it accepts an **rvalue reference** and uses move semantics: `A(A&& other) {/*...*/}`
+- **Move assignment operator** - similar to the copy assignment operator, but accepts **rvalue reference** and uses move semantics: `A& operator=(A&& other)`
+
+#### What happens when the user declares them explicitly
+
+Via https://www.foonathan.net/2019/02/special-member-functions/
+
+![special-member-functions](special-member-functions.png)
+
+A couple of points need explanation:
+
+- A “user-declared” special member function is a special member function that is in any way mentioned in the class: It can have a definition, it can be **defaulted**, it can be **deleted**. This means that writing `foo(const foo&) = default` prohibits a move constructor.
+- A compiler declared “defaulted” special member behaves the same as `= default`, e.g. a defaulted copy constructor copy constructs all members.
+- A compiler declared “deleted” special member behaves the same as `= delete`, e.g. if overload resolution decides to use that overload it will fail with an error that you are invoking a deleted function.
+- If a compiler does not declare a special member, it does not participate in overload resolution. This is different from a deleted member, which does participate. For example, if you have a copy constructor, the compiler will not declare move constructor. As such, writing `T obj(std::move(other))` will result in a call to a copy constructor. If on the other hand the move constructor were deleted, writing that would select the move constructor and then error because it is deleted.
+- The behavior of the boxes marked red is deprecated, as the defaulted behavior in that case is dangerous.
 
 #### Copy constructor vs copy assignment operator
 
@@ -71,19 +85,20 @@ const : this pointer becomes const. This function cannot modify the variables.
 ### Instantiate an object
 
 ```cpp
-Entity entity; // Calls the default constructor (not null or something)
+Entity entity; // Calls the default constructor (not null or something). Note that later initialization might be double work. Same as Entity entity();
 
-Entity entity = Entity("something") // Calls the specified constructor
+Entity entity = Entity("something") // Calls the specified constructor, then copies the created object to the newly created entity. Note that the constructor is called many times, so it's not efficient.
 
 Entity entity("somethign") // Same as above, just shorter in code
 
 Entity* entity = new Entity("somethign") // Heap allocation, slower and manually  needs to be deleted, but survives the scope's end
 
-Entity entity{"something"} // Called "uniform initialization", can be used the same way all over, e.g. int:
+Entity entity{"something"} // Called "uniform initialization". Object is initialized on the spot. Efficient and recommended way in modern C++. It can be used the same way all over, e.g. int:
 
 int a{5}; // equals to int a = 5;
 
 // Smart pointers (see their own sectin)
+
 // TODO
 ```
 
