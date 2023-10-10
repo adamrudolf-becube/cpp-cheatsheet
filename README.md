@@ -4,12 +4,14 @@ Quick lookup of arbitrary C++ rules
 ## Introduction
 During the years I started to write very concise notes of C++ to quickly look up what I was missing. This became a very random set of cheatsheet entries, subjectively representing my learning. I intend this repo to have a permanent, formatted, structured storage for myself, but it can be used (and contributed) by anyone finding it.
 
-## Pointer basics
+## Basics
+
+### Pointer basics
 - `*` -> **dereference** a.k.a. "pointed value". E.g. variable `a` is a pointer, `*a` is the value pointed at
 - `*` is also declaring a variable that is meant to a pointer: `int *a` => `a` is a pointer to an `int`
 - `&` **reference** i.e. "address of": `a = 54` -> `&a` is the address, where the value `54` is stored at
 
-## Pass array reference to a function
+### Pass array reference to a function
 
 In C++ you cannot pass an array to a function. However, there are three methods for passing an array by reference to a function:
 
@@ -17,7 +19,7 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 - `void functionName(variableType arrayName[length of array])`
 - `void functionName(variableType arrayName[])`
 
-## Method pre- and postfixes
+### Method pre- and postfixes
 
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
 - ` = 0` : a function is pure virtual and you cannot instantiate an object from this class. You need to derive from it and implement this method. You cannot declare a class abstract explicitly, but any class containing pure virtual methods are abstract. Only virtual functions can be pure virtual.
@@ -29,14 +31,51 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 const : this pointer becomes const. This function cannot modify the variables.
 - `const` : the `this` pointer is const meaning the member function (method) cannot change the class members (prefer this if possible)
 
-## `const` vs `constexpr`
+### Instantiate an object
+
+```cpp
+Entity entity; // Calls the default constructor (not null or something)
+
+Entity entity = Entity("something") // Calls the specified constructor
+
+Entity entity("somethign") // Same as above, just shorter in code
+
+Entity* entity = new Entity("somethign") // Heap allocation, slower and manually  needs to be deleted, but survives the scope's end
+
+Entity entity{"something"} // Called "uniform initialization", can be used the same way all over, e.g. int:
+
+int a{5}; // equals to int a = 5;
+
+// Smart pointers (see their own sectin)
+// TODO
+```
+
+See more about uniform initialization here: https://www.geeksforgeeks.org/uniform-initialization-in-c/
+
+#### Some notes abour instantiation
+
+Thing about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. (Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place)
+
+### casts
+
+- `static_cast`: most common, compile time safe casts (e.g. child class to base class). IDE can check usually
+- `dynamic_cast`: mostly base to child, performs runtime check, returns `nullptr` if it wasn't successful. Can be used to check type of variable. (Similar cases when you would use something like )
+- `const_cast`: modifies the constness of the target
+- `reinterpret_cast`: converts pointer to different type without checking or modifying the pointed at data. Just starts to interpret the same data as a different type wihtout any considerations (type punning)
+
+
+## Which one to use
+
+Often there are multiple solutions to the same problem, that look similar, but have subtle differences
+
+### `const` vs `constexpr`
 
 - `constexpr`: we know the value **compile time**, compiler can substitute with literal
 - `const`: might be decided **runtime**, but value is decided on assignment, cannot be changed later (actually can, e.g. with `const_cast`)
 
 Rule of thumb: for performance reasons, use constexpr if possible
 
-## array vs `std::vector` vs `std::array`
+### array vs `std::vector` vs `std::array`
 
 Array is the old, C way of working with arrays. It might be cumbersome, has fixed size, but essentially there is nothing wrong with it.
 
@@ -49,7 +88,7 @@ For convinience, you can use the more modern `std::vector` or `std::array`. Gene
 | Has the same memory address over lifetime (fast) | When you add elements, sometimes it finds a new, bigger place in the heap and copies all the existing data (slow) |
 | Many things decided compile time (e.g. size gets hard coded, `size()` method just returns burnt in value) | Need to calculate everything runtime (slower) |
 
-## `push_back` vs `emplace_back`
+### `push_back` vs `emplace_back`
 
 Note: the following might not be true to all compiler versions
 
@@ -80,7 +119,7 @@ dogs.emplace_back(Dog{16, "Einstein"}) // Same, creates a temporary dog, and cop
 dogs.emplace_back(16, "Einstein"); // Quicker, creates only one object already in the vector
 ```
 
-## Include guard vs `#pragma once`
+### Include guard vs `#pragma once`
 
 Both solutions protect from the case when you include the same file twice, causing double definition. These two are mechanisms to ensure, if a certain file has been already included, and is included again, then nothing will happen.
 
@@ -124,38 +163,6 @@ Placeholders:
 	
 `f1 = std::bind(f, 3, _1)`, you should call `f1(something)` and something will be substituted to `_1`, therefore `f(3, something)` will be called.
 	
-## Instantiate an object
-
-```cpp
-Entity entity; // Calls the default constructor (not null or something)
-
-Entity entity = Entity("something") // Calls the specified constructor
-
-Entity entity("somethign") // Same as above, just shorter in code
-
-Entity* entity = new Entity("somethign") // Heap allocation, slower and manually  needs to be deleted, but survives the scope's end
-
-Entity entity{"something"} // Called "uniform initialization", can be used the same way all over, e.g. int:
-
-int a{5}; // equals to int a = 5;
-
-// Smart pointers (see their own sectin)
-// TODO
-```
-
-See more about uniform initialization here: https://www.geeksforgeeks.org/uniform-initialization-in-c/
-
-### Some notes abour instantiation
-
-Thing about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. (Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place)
-
-## casts
-
-- `static_cast`: most common, compile time safe casts (e.g. child class to base class). IDE can check usually
-- `dynamic_cast`: mostly base to child, performs runtime check, returns `nullptr` if it wasn't successful. Can be used to check type of variable. (Similar cases when you would use something like )
-- `const_cast`: modifies the constness of the target
-- `reinterpret_cast`: converts pointer to different type without checking or modifying the pointed at data. Just starts to interpret the same data as a different type wihtout any considerations (type punning)
-
 ## Rules of thumb
 
 There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
@@ -207,6 +214,10 @@ Note, the PIMPL idiom can help to reduce your header code as well.
 
 - Every class method that doesn't use members should be placed outside the class. If there is still reason to include it in the class, it should be static. It helps a lot to the compiler and to you when debugging.
 - Every class methos that reads, but doesn't write members, should be marked as `const`
+
+### Other
+
+- When you use `push_back` to add an element to a `std::vector`, consider using `emplace_back`. Especially when you create and add an element in the same step.
 
 ## How the compiler works
 
