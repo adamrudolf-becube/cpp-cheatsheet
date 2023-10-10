@@ -4,6 +4,8 @@ Quick lookup of arbitrary C++ rules
 ## Introduction
 During the years I started to write very concise notes of C++ to quickly look up what I was missing. This became a very random set of cheatsheet entries, subjectively representing my learning. I intend this repo to have a permanent, formatted, structured storage for myself, but it can be used (and contributed) by anyone finding it.
 
+This document isn't meant to be complete, and isn't meant to be used as learning material. Instead it's a memory refresher for a randomly picked set of topics that has caused problem for me since I started to learn C++.
+
 ## Basics
 
 ### Pointer basics
