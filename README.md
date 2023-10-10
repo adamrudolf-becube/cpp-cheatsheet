@@ -70,6 +70,17 @@ Note if you would like to prohibit copying, you need to delete both.
 - Copy works with lvalue references and copy semantics (new memory is allocated and copied by value)
 - Move works with rvalue references and move semantics (a pointer is set to an already initialized memory address)
 
+Prefer move if you don't have a reson to copy as it's incomparably faster. Ever case is different, but some rules of thumb you can use move, if 1) you don't need to modify the value, or 2) if you actually want to make changes to the original value.
+
+### How the assignment operator works (`=`)
+
+Copies value:
+- If they are value types, e.g. normal int: `int b = a` will have different memory addresses. Changing `b` doesn't change `a`
+- If they are pointers, `MyClass* b = a` will copy the address ("value" of the pointer itself), so they will point to the same data.
+    - Changing `b` itself (e.g. the address, like `b++`) will not change `a`
+    - Changing the referred value, e.g. `b->member = 3;` will change the pointed objects. While `a` itself doesn't change, `a->member` will have the new value.
+- References: a reference cannot be reassigned, in their case the assignment operator actually copies the underlying, referenced value.
+
 ### Method pre- and postfixes
 
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
