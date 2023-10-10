@@ -90,7 +90,7 @@ Copies value:
 
 #### Prefix
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
-- `static`: 
+- `static`: method doesn't get the `this` pointer as a hidden parameter. Function belongs to class instead of object instances. Can be used with or without instantiation.
 - ` = 0` : a function is pure virtual and you cannot instantiate an object from this class. You need to derive from it and implement this method. You cannot declare a class abstract explicitly, but any class containing pure virtual methods are abstract. Only virtual functions can be pure virtual.
 - ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the equal operator and copy constructor to prohibit copying)
     - Any use of a deleted function is ill-formed (the program will not compile).
@@ -99,6 +99,8 @@ Copies value:
 - `explicit` : The explicit specifier specifies that a constructor or conversion function (since C++11) doesn't allow implicit conversions or copy-initialization.
 const : this pointer becomes const. This function cannot modify the variables.
 - `const` : the `this` pointer is const meaning the member function (method) cannot change the class members (prefer this if possible)
+
+There are others, like `noexcept` these are the ones I found important to note down for myself.
 
 ### Instantiate an object
 
