@@ -19,6 +19,43 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 - `void functionName(variableType arrayName[length of array])`
 - `void functionName(variableType arrayName[])`
 
+### Copy semantics
+
+Copying the actual data of the object to another object rather than making another object to point the already existing object in the heap.
+
+### Move semantics
+
+Move semantics involves pointing to the already existing object in the memory. It might include invlidating the original pointer, so the "original variable is destroyed".
+
+### Special member functions and their rules
+
+The functions (in certain cases) the compiler automatically generates for you (for class `A`):
+
+- **Default constructor** - constructor without parameters and special behaviour: `A() {/*...*/}`
+- **Destructor** - `~A() {/*...*/}` there is only one desctructor, and it cannot have arguments
+- **Copy constructor** - constructor with one parameter with the type of **reference** the class itself: `A(A& other) {/*...*/}`
+- **Copy assignment operator** - `A& operator=(A other)` (obviously strongly connected to copy construction, see differences soon). Might accept the other by value or reference, or as `const` or `volatile`
+- **Move constructor** - similar to the copy
+- **Move assignment operator** - 
+
+#### Copy constructor vs copy assignment operator
+
+Both are used to initialize an object using another object of the same type, but there are small differences.
+
+|**Copy constructor**|**Copy assignment operator**|
+|--------------------|----------------------------|
+|It is called when a new object is created from an existing object, as a copy of the existing object|This operator is called when an already initialized object is assigned a new value from another existing object. |
+|It creates a separate memory block for the new object.|It does not create a separate memory block or new memory space.|
+|It is an overloaded constructor.|It is a bitwise operator. |
+|C++ compiler implicitly provides a copy constructor, if no copy constructor is defined in the class.|A bitwise copy gets created, if the Assignment operator is not overloaded. |
+
+Note if you would like to prohibit copying, you need to delete both.
+
+#### Copy vs move
+
+- Copy works with lvalue references and copy semantics (new memory is allocated and copied by value)
+- Move works with rvalue references and move semantics (a pointer is set to an already initialized memory address)
+
 ### Method pre- and postfixes
 
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
@@ -26,7 +63,7 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 - ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the equal operator and copy constructor to prohibit copying)
     - Any use of a deleted function is ill-formed (the program will not compile).
     - You can prohibit some default behavior, for example normally you can copy a class even if you don't explicitly specify a copy constructor. By deleting the copy constructor you can explicitly prohibit copying.
-- `= default` : you can mark a function explicitly to use the default, compiler implemented version. This is redundant, same as not writing the whole thing at all. This just helps you to see what's happening so you don't have to know the rules by heart.
+- `= default` : you can mark a function explicitly to use the default, compiler implemented version. This is redundant, same as not writing the whole thing at all. This just helps you to see what's happening so you don't have to know the rules by heart. See [Special member functions and their rules](###Special-member-functions-and-their-rules)
 - `explicit` : The explicit specifier specifies that a constructor or conversion function (since C++11) doesn't allow implicit conversions or copy-initialization.
 const : this pointer becomes const. This function cannot modify the variables.
 - `const` : the `this` pointer is const meaning the member function (method) cannot change the class members (prefer this if possible)
@@ -76,6 +113,12 @@ Placeholders:
 ## Which one to use
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
+
+### `lvalue` vs `rvalue`
+
+|**`lvalue`**|**`rvalue`**|
+|------------|------------|
+|||
 
 ### `const` vs `constexpr`
 
@@ -212,6 +255,16 @@ Note, the PIMPL idiom can help to reduce your header code as well.
 
 - Every class method that doesn't use members should be placed outside the class. If there is still reason to include it in the class, it should be static. It helps a lot to the compiler and to you when debugging.
 - Every class methos that reads, but doesn't write members, should be marked as `const`
+
+### Constructors and desctructors
+
+- Implement a **virtual destructor** if your class is meant to be inherited from.
+- Don't inherit from a class that doesn't have a virtual destructor (e.g. some standard library classes, like `std::vector`)
+- **Rule of three** - If a class requires a user-defined destructor, a user-defined copy constructor, or a user-defined copy assignment operator, it almost certainly requires all three.
+- **Rule of five** - Because the presence of a user-defined (or = default or = delete declared) destructor, copy-constructor, or copy-assignment operator prevents implicit definition of the move constructor and the move assignment operator, any class for which move semantics are desirable, has to declare all five special member functions.
+- **Rule of zero** - Classes that have custom destructors, copy/move constructors or copy/move assignment operators should deal exclusively with ownership (which follows from the Single Responsibility Principle). Other classes should not have custom destructors, copy/move constructors or copy/move assignment operators[1].
+
+More about rule of 3/5/0 [here](https://en.cppreference.com/w/cpp/language/rule_of_three).
 
 ### Other
 
