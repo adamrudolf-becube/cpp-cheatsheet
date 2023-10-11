@@ -250,6 +250,54 @@ On the other hand
 
 - `#pragma once` is not part of the standard. Most compilers use it, but there is always a slight chance that it will run on an error, while include guard is always guaranteed to work.
 
+### `<iostream>` vs `<stdio.h>`
+
+Both are libraries for text input and output. One comes from C, other from C++.
+
+`<stdio.h>` is a C header ("old style") containing functions like `printf` and co.
+
+```cpp
+printf("Something\n");
+```
+
+`<iostream>` is the more modern, C++ header containing stream output operations, most importantly the standard output, so it enables you to do things like this:
+
+```cpp
+std::cout << "Something" << std::endl;
+```
+
+You can use both in C++.
+
+### `std::endl` vs `\n`
+
+Most cases it doesn't matter, but there are some small diffs.
+
+First of all, the standard endline character is different in different platforms (`\r\n` on Windows and `\n` on Linux and Mac). `std::endl` always gets resolved to the corresponding endline, but surprisingly `\n` does too in some cases.
+
+The other difference is `std::endl` always flushes the buffer, `\n` doesn't.
+
+The difference can be illustrated by the following:
+
+```cpp
+std::cout << std::endl;
+```
+
+is equivalent to
+
+```cpp
+std::cout << '\n' << std::flush;
+```
+
+So,
+
+Use `std::endl` If you want to force an immediate flush to the output.
+
+Use `\n` if you are worried about performance (which is probably not the case if you are using the `<<` operator).
+
+Contrary to other claims, the `\n` character is mapped to the correct platform end of line sequence only if the stream is going to a file (`std::cin` and `std::cout` being special but still files (or file-like)).
+
+([Via](https://stackoverflow.com/questions/213907/stdendl-vs-n))
+
 ## Rules of thumb
 
 There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
