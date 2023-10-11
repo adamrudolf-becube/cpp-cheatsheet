@@ -252,7 +252,7 @@ while the pragma:
 // contents of your file
 ```
 
-There is no signiicant difference, so best is to follow convention if there is already any. Otherwise, here are the smaller differences:
+There is no significant difference, so best is to follow convention if there is already any. Otherwise, here are the smaller differences:
 
 - `#pragma once` is less code, some would argue that is't easier to read
 - `#pragma once` is one line, so it's harder to make mistakes, e.g. missing `#endif` or misspelling the name of the def
@@ -763,7 +763,7 @@ Let's say you have `MyClass.h` and `MyClass.cpp`. As normal, you declare a class
 class MyClass {
 
 public:
-	void method();
+    void method();
 };
 ```
 
@@ -775,7 +775,7 @@ public:
 
 void MyClass::method()
 {
-	std::cout << "MyClass::method() called" << std::endl;
+    std::cout << "MyClass::method() called" << std::endl;
 }
 ```
 
@@ -791,7 +791,7 @@ class MyClass {
 
 public:
     Foo foo;
-	void method();
+    void method();
 };
 ```
 
@@ -803,7 +803,7 @@ public:
 
 void MyClass::method()
 {
-	std::cout << "MyClass::method() called" << std::endl;
+    std::cout << "MyClass::method() called" << std::endl;
 }
 ```
 
@@ -820,7 +820,7 @@ class MyClass {
 
 public:
     Foo foo; // Used but not included here
-	void method();
+    void method();
 };
 ```
 
@@ -833,7 +833,7 @@ public:
 
 void MyClass::method()
 {
-	std::cout << "MyClass::method() called" << std::endl;
+    std::cout << "MyClass::method() called" << std::endl;
 }
 ```
 
