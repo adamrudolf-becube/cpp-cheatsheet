@@ -743,9 +743,87 @@ IDEs do some smart checks, showing some weird configurations might actually work
 
 Let's say you have `MyClass.h` and `MyClass.cpp`. As normal, you declare a class called `MyClass` in `MyClass.h`, and you specify definitions in `MyClass.cpp`. `MyClass.cpp` includes `MyClass.h` just like normally.
 
+```cpp
+// MyClass.h
+
+#pragma once
+
+class MyClass {
+
+public:
+	void method();
+};
+```
+
+```cpp
+// MyClass.cpp
+
+#include <iostream>
+#include "MyClass.h"
+
+void MyClass::method()
+{
+	std::cout << "MyClass::method() called" << std::endl;
+}
+```
+
 Now let's say you have a member of this class of type `Foo`, declared in `Foo.h`. You need to write something like `Foo foo;` in the `MyClass.h`. You might guess you should include `Foo.h` in `MyClass.h`.
 
+```cpp
+// MyClass.h
+
+#pragma once
+#include "Foo.h"
+
+class MyClass {
+
+public:
+    Foo foo;
+	void method();
+};
+```
+
+```cpp
+// MyClass.cpp
+
+#include <iostream>
+#include "MyClass.h"
+
+void MyClass::method()
+{
+	std::cout << "MyClass::method() called" << std::endl;
+}
+```
+
 But since you don't compile header files, it's okay to use it in `MyClass.h` and include `Foo.h` in `MyClass.cpp` as long as `MyClass.cpp` is the only file including `MyClass.h`. The only place your `MyClass.h` code will appear and being compiled is inside `MyClass.cpp` after the preprocessor has inserted it. And since you have the `#include "Foo.h"`, it will compile.
+
+This is also perfectly working code:
+
+```cpp
+// MyClass.h
+
+#pragma once
+
+class MyClass {
+
+public:
+    Foo foo; // Used but not included here
+	void method();
+};
+```
+
+```cpp
+// MyClass.cpp
+
+#include <iostream>
+#include "Foo.h" // Included here
+#include "MyClass.h"
+
+void MyClass::method()
+{
+	std::cout << "MyClass::method() called" << std::endl;
+}
+```
 
 But I don't recommend it, as as soon as someone else includes `MyClass.h` (and they will, since it's the point of having header files), they either need to include `Foo.h` before that, or have a crash.
 
