@@ -141,6 +141,10 @@ Thing about performance. If you create an object, and initialize it later, a cop
 - `const_cast`: modifies the constness of the target
 - `reinterpret_cast`: converts pointer to different type without checking or modifying the pointed at data. Just starts to interpret the same data as a different type wihtout any considerations (type punning)
 
+### Smart pointers
+
+- 
+
 ## `std::bind`
 
 Creates a new std function with "predefined" arguments.
@@ -154,6 +158,25 @@ Placeholders:
 ## Which one? The "VS topics"
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
+
+### Heap vs stack
+
+Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
+
+There is one big piece of memory called **heap**. It lives during the entire time of the program, and pieces of data stored here are not connected to a specific function.
+
+On the other hand, when a scope is opened, for example the control goes into a function, an `if` block, or just an empty block, a new part of memory is allocated to store the local variables there, and it's called a **stack frame**. As soon as execution leaves the scope, the stack frame gets destroyed, and all the memory allocated in it gets automatically freed. The stack has a predefined size, usually around 2 MB.
+
+The heap and stack have different structure which results memory allocations to be much faster in the stack.
+
+Pointers are allocated in the heap (everything with the `new` keyword), while "normal" local variables are allocated in the stack.
+
+One advantage of the stack is this incomparably better performance. The other benefit is that its less error prone, because the allocated memory gets freed up automatically, while in case of heap allocation you need to do it yourself.
+
+The heap has some advantages over the stack: it's bigger, and anything stored in it survives the scope. Also, variables in the heap 
+
+> Rule of thumb: use the stack whenever you can. Meaning, you should use heap allocation 1) if you need data that survives the scope, or 2) you have data that is huge (like an image). Also you can only use the heap to allocate dynamicly growing data, like a `std::vector`.
+
 
 ### `i++` vs `++i`
 
