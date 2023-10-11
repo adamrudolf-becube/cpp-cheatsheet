@@ -177,6 +177,26 @@ The heap has some advantages over the stack: it's bigger, and anything stored in
 
 > Rule of thumb: use the stack whenever you can. Meaning, you should use heap allocation 1) if you need data that survives the scope, or 2) you have data that is huge (like an image). Also you can only use the heap to allocate dynamicly growing data, like a `std::vector`.
 
+### Pointer vs reference vs value object
+
+When to use which?
+
+It's a complex question, but here are some points you can start from.
+
+Value objects and references are stored in the stack, while pointers are stored on the heap. Heap allocation is slower, and we need to take care about deallocation, meaning that whenever you can, you should prefer stack allocated objects, meaning you should only use pointers when you have to.
+
+If you have to use pointers, prefer smart pointers, because thay at least take care of the memory management problem, but still have the problem with the worse performance.
+
+So when do I need to use pointers?
+
+**When the variable needs to survive the scope**
+
+If you pass around heavy objects between differenc scopes, for example construct something within a funciton and you return it, or the other way around, you need to pass something in to a function, there are multiple options for you.
+
+You can move or copy the object. Copy is not performance effective, so you should avoid it if poissible.
+
+If you can move, that is fine
+
 
 ### `i++` vs `++i`
 
