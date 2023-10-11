@@ -739,7 +739,9 @@ Phew, that was long and complicated, let's do a summary.
 
 This is an optional topic, only read it if you want to deep dive into the subtleness of C++ compilation and linking.
 
-Header files do some smart checks. Let's say you have `MyClass.h` and `MyClass.cpp`. As normal, you declare a class called `MyClass` in `MyClass.h`, and you specify definitions in `MyClass.cpp`. `MyClass.cpp` includes `MyClass.h` just like normally.
+IDEs do some smart checks, showing some weird configurations might actually work. Also the compiler and linker are smart, and only those cases fail that actually cannot physically run.
+
+Let's say you have `MyClass.h` and `MyClass.cpp`. As normal, you declare a class called `MyClass` in `MyClass.h`, and you specify definitions in `MyClass.cpp`. `MyClass.cpp` includes `MyClass.h` just like normally.
 
 Now let's say you have a member of this class of type `Foo`, declared in `Foo.h`. You need to write something like `Foo foo;` in the `MyClass.h`. You might guess you should include `Foo.h` in `MyClass.h`.
 
