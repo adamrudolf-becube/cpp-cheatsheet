@@ -155,6 +155,18 @@ Placeholders:
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
 
+### `i++` vs `++i`
+
+The obvious difference is that the resulting value in case of `i++` is the original value before increment, and in case of `++i` it's the incremented value.
+
+This means they have different mechanisms in the background: `i++` needs to copy the value first, and then increment, because it has to have both the before and after values. Naively you would think it makes `++i` faster, but it's not always the case.
+
+In case of most POD types, like a plain `int`, a type which with the `++` operator is probably most used, it doesn't cause a visible difference, especially because most compilers can quite smart optimize it.
+
+On the other hand you can use `++` operator with more complex data types, you can define it on any class. In case of more complex data types move semantics migth become a considerable overhead, so there might be cases where `i++` should be avoided unless you specifically need it.
+
+Short summary: performance-wise `++i` might be faster in some cases, but never slower, but in most of the cases it just doesn't matter.
+
 ### `lvalue` vs `rvalue`
 
 |**`lvalue`**|**`rvalue`**|
