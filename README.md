@@ -977,3 +977,35 @@ It generates an `.obj` object file for each **translation unit**. A **translatio
 C++ doesn't care about files, file structure has no meaning to C++. (Unlike in Java for example.) A file is just a unit to feed the source code to the compiler. You tell the compiler what type of file it is, and how to treat it. It will treat the `.cpp`, `.c` and `.h` files as C++, C and header files (by default).
 
 Every C++ file will be treated as a translation unit an will be resolved as a object file. It is possible tough to include one `.cpp` file to another and compile them as one translation unit.
+
+
+## Questions
+
+### Polymorphism only with pointers?
+
+People say we can only achieve runtime polymorphism using pointers.
+
+I have made some simple test with a base and child class and a virtual function that is overridden in the child with some printouts to show which function was called.
+
+I instantiated them
+
+- once as objects,
+- once as references (initialized from the previous objects)
+- and once as shared pointers.
+Then I called the virtual func
+
+This is what I found.
+
+The table shows 
+
+||Object|Reference|Pointer|
+|-|-|-|-|
+|**Direct call on child instance**|Child|Child|Child|
+|**Assign child to parent type and call on that**|Base|Base|Child|
+|**Pass to funcion which expects a parent type and call inside**|Base for function expecting object, Child for function expecting reference|Child|Child|
+
+To summarize, if I use a child instance as a base type, both objects and references will call the base class function, so no polymorphic behaviour here.
+
+But if I have a function that expects a reference to a base class, both objects and referencess passed to it behave polymorphically.
+
+Why is that?
