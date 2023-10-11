@@ -504,7 +504,7 @@ If you declare and use something in a file without definition, and simply just c
 
 With other words, the compiler only considers files in separation, and it's the linker's job to see your project as a whole.
 
-It's the linkes's job to resolve those unresolved references. So if you are using this undefined `void log();` function in your `main.cpp` basically you can run into 2 linking problems: after searching in the object files the linker either doesn't find a definition at all, or finds more than 1 of them. Both are linking errors, meaning your final program cannot be made.
+It's the linkes's job to resolve those unresolved references. So if you are using this undefined `void log();` function in your `main.cpp` basically you can run into 2 linking problems: after searching in the object files the linker either doesn't find a definition at all, or finds more than 1 of them. Both are linking errors, meaning your final program cannot be created.
 
 So it's important that among all the object files there is one and only one function definition that matches *exactly* the declaration you have.
 
@@ -735,6 +735,78 @@ Phew, that was long and complicated, let's do a summary.
     - The `#include` statements are to have a central definition for declarations which is important for static checks performed by the compiler
     - The link resulution is done by the linker at a later stage exploiting the fact that there is only one of every function signature
 
+#### Some smart checks
+
+This is an optional topic, only read it if you want to deep dive into the subtleness of C++ compilation and linking.
+
+Header files do some smart checks. Let's say you have `MyClass.h` and `MyClass.cpp`. As normal, you declare a class called `MyClass` in `MyClass.h`, and you specify definitions in `MyClass.cpp`. `MyClass.cpp` includes `MyClass.h` just like normally.
+
+Now let's say you have a member of this class of type `Foo`, declared in `Foo.h`. You need to write something like `Foo foo;` in the `MyClass.h`. You might guess you should include `Foo.h` in `MyClass.h`.
+
+But since you don't compile header files, it's okay to use it in `MyClass.h` and include `Foo.h` in `MyClass.cpp` as long as `MyClass.cpp` is the only file including `MyClass.h`. The only place your `MyClass.h` code will appear and being compiled is inside `MyClass.cpp` after the preprocessor has inserted it. And since you have the `#include "Foo.h"`, it will compile.
+
+But I don't recommend it, as as soon as someone else includes `MyClass.h` (and they will, since it's the point of having header files), they either need to include `Foo.h` before that, or have a crash.
+
+This is both a smart check that lets through things that work, but also a good example of dependent headers which you should never have.
+
+There are some other things that are weird but work:
+
+- It is okay to declare and not define a function as long as you don't use it. Missing implementation is a problem for an actual function call. In this case both the compilation and linking will succeed.
+- Tough if you call the missing function in an unused function, it depends. If you have an unused function (dead code) that calls a function with the missing implementation, the compiler knows that other files might be using it, so it gives you an error. But if you mark it as `static`, making your dead code private to your file, the compiler will validate that noone is using that function call, so you are essentially calling the missing function in dead code, and you will get no errors.
+
+```cpp
+
+/*
+This is not OK, as we don't know who will include this file and call `deadCode()`
+In that case `undefinedFunction()` would be called causing an error,
+*/
+
+#inclue <iostream>
+
+void undefinedFunction(); // This function has no definition in other files either
+
+void deadCode()
+{
+    undefinedFunction();
+}
+
+int main()
+{
+    std::cout << "I do something unrelated to those above functions..." << std::endl;
+    return 0;
+}
+
+```
+
+```cpp
+
+/*
+This is OK, because marking `deadCode()` static we made sure it's invisible for the outside world,
+and it can be called only from this file. The compiler and linker can know that no one calles this
+function, so also `undefinedFunction()` doesn't ever get executed.
+*/
+
+#inclue <iostream>
+
+void undefinedFunction(); // This function has no definition in other files either
+
+static void deadCode()
+{
+    undefinedFunction();
+}
+
+int main()
+{
+    std::cout << "I do something unrelated to those above functions..." << std::endl;
+    return 0;
+}
+
+```
+
+- If you have a declaration of an undefined function, and even call it, the single file will compile into an object file without problem. Because it's the linker's job to follow the reference, and the compiled object files are not meant to be used standalone. It "believes" that the function will be defined somewhere. The linking will fail.
+
+
+
 #### Why is it different in other languages?
 
 There is an important fact I haven't emphasized yet:
@@ -770,31 +842,3 @@ It generates an `.obj` object file for each **translation unit**. A **translatio
 C++ doesn't care about files, file structure has no meaning to C++. (Unlike in Java for example.) A file is just a unit to feed the source code to the compiler. You tell the compiler what type of file it is, and how to treat it. It will treat the `.cpp`, `.c` and `.h` files as C++, C and header files (by default).
 
 Every C++ file will be treated as a translation unit an will be resolved as a object file. It is possible tough to include one `.cpp` file to another and compile them as one translation unit.
-
-##### Notes
-
-- If you have a declaration of a function, and even call it, the single file will compile into an object file without problem. Because it's the linker's job to follow the reference, and the compiled object files are not meant to be used standalone. It "believes" that the function will be defined somewhere. The linking will fail.
-- It is okay to declare and not define a function as long as you don't use it. Missing implementation is a problem for an actual function call. In this case both the compilation and linking will succeed.
-- Tough if you call the missing function in an unused function, it depends. If you have an unused function (dead code) that calls a function with the missing implementation, the compiler knows that other files might be using it, so it gives you an error. But if you mark it as `static`, making your dead code private to your file, the compiler will validate that noone is using that function call, so you are essentially calling the missing function in dead code, and you will get no errors.
-
----
-
-IN  PROGRESS FROM HERE
-
-
-## Questions
-
-### Question - include header dependencies from the cpp
-
-All trainings say includes are just copying text to this file from another.
-
-Let's say I create a header file, called MyTest.h. If I use a class (Foo) in it, without including of forward declaring anything, it doesn't compile. It makes sense.
-
-Now I create a corresponding cpp file, called MyTest.cpp, that includes MyTest.h. Then, if I include the above class (let's say "Foo.h") in the .cpp, the header starts to compile. The .cpp includes the .h, but the .h doesn't have any reference to the .cpp whatsoever. Header should be independent from the cpp. How do we know that that cpp file will be used for the header?
-
-Also, when I rename them (they have different names even apart from the file extension, like "MyTest.h" and "OtherFile.cpp"), suddenly the .h file stops compiling. It contradits the fact that these are all conventions, and even .h or .cpp doesn't have a specific meaning to the compiler. I assume, maybe it's some additional Visual Studio logic, but it still shouldn't affect what to include where.
-
-Apparently, if I have more than 1 files including the header file, it stops compiling again. This, again, makes sense. So the case is, if I have 1 single file including the header, AND that is named the same way as the header, then it's enough to include dependencies in the cpp. 
-
-So how it is?
-
