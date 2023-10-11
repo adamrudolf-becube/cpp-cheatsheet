@@ -124,7 +124,7 @@ int a{5}; // equals to int a = 5;
 
 See more about uniform initialization here: https://www.geeksforgeeks.org/uniform-initialization-in-c/
 
-#### Some notes abour instantiation
+#### Some notes about instantiation
 
 Thing about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. (Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place)
 
@@ -151,7 +151,7 @@ Placeholders:
 	
 `f1 = std::bind(f, 3, _1)`, you should call `f1(something)` and something will be substituted to `_1`, therefore `f(3, something)` will be called.
 	
-## Which one? The VS topics
+## Which one? The "VS topics"
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
 
@@ -350,7 +350,7 @@ Note, the PIMPL idiom can help to reduce your header code as well.
 ### Class methods
 
 - Every class method that doesn't use members should be placed outside the class. If there is still reason to include it in the class, it should be static. It helps a lot to the compiler and to you when debugging.
-- Every class methos that reads, but doesn't write members, should be marked as `const`
+- Every class method that reads, but doesn't write members, should be marked as `const`
 
 ### Constructors and desctructors
 
@@ -384,13 +384,13 @@ When I debug a JavaScript code and see a function call, I scroll up and it has t
 
 Pretty much the same thing happens in other languages. In Python you don't see the explicit path in the code, but there is a register in `PYTHONPATH` where the package names can be resolved to folders and eventually `.py` files. Point is, following the imports, you will eventually find the definition of the function.
 
-Based on my vague memory, C# and Java does something similar.
+Based on my vague memory, C# and Java do something similar.
 
 When I was a beginner C++ developer, I was thinking "yeah, it is called `#include` in C++, but that's just a slightly different word". So when we used classes, we included them. We had to include the header files, but I accepted, okay we separate the interface from the implementation, because that's how you do it in C++.
 
 But I was very confused by some basic things. Let's say we wnat to use the `MyClass` to our client code, let's call it `main.cpp` for simplicity. `MyClass` has two files, `MyClass.h` and `MyClass.cpp`. In `main.cpp` we import the `MyClass.h`, which looked like what I expected. When I call a method of `MyClass` inside `main.cpp`, if I need to follow where it comes from, I follow the includes. I get to `MyClass.h`. But that doesn't contain the bodies of the functions. So my Python brain was thinking, okay, so I guess `MyClass.h` includes `MyClass.cpp` so I can follow the links to resolve the link to the function body.
 
-But no. It's the other way arounf. It's `MyClass.cpp` including the `MyClass.h`. So how does it work? Both references point towards the `.h` file, and no one ever includes `MyClass.cpp`.
+But no. It's the other way around. It's `MyClass.cpp` including the `MyClass.h`. So how does it work? Both references point towards the `.h` file, and no one ever includes `MyClass.cpp`.
 
 And this is because the `#include` statement might look a bit like the `import` in other languages, but it has a **totally different purpose**. This is the one thing that clicked me, the one thing that no one has ever told me:
 
@@ -408,11 +408,15 @@ So the basic idea is to turn your text file (of C++ code, a.k.a. your *source co
 
 To be simplified, when you compile your code, each of your files are translated into separate binaries. These are called **object files**, usually gaving the `.obj` extension.
 
-Usually you have more than one file, and in some of your files you use funtions that are defined in other functions. This means that these `.obj` files - despite of being binaries - don't make sense in themselves, they contain unresolved references. But it's not a mistake, this is how it should be at this stage. They will be connected later.
+Usually you have more than one file, and in some of your files you use funtions that are defined in other files. This means that these `.obj` files - despite of being binaries - don't make sense in themselves, they contain unresolved references. But it's not a mistake, this is how it should be at this stage. They will be connected later.
 
-The first, important thing to understand is that the compiler automatically loops through *all* the source files, regardless whether they eventyally get used or not. The compiler is *not* following any links or dependencies, just compiles all the files, and generates the object files for them. As you will see later, the compiler doesn't even know about any references from one file to another, it handles files in separation without worrying about unresolved references. This might be a bit more complicated, but this explanation is enought for us right now.
+The first, important thing to understand is that the compiler automatically loops through *all* the source files, regardless whether they eventyally get used or not. The compiler is *not* following any links or dependencies, just compiles all the files, and generates the object files for them.
 
-The important and somewhat surprising fact is that your source files *don't* need to refer to each other in any way. If you call a `log` function within your `main` function, you *don't* need to tell your `main` function where to find the `log`. There is a separate tool called **linker**, and it's job is to find it for you. It will ensure that there is only one funcion like that in your entire project, so it will be unambiguous which one to use when you call it.
+In C++ file is not a unit of anything. The goal is to compile your whole code, and a file is only and administrative unit of feeding your code to the compiler. But a file doesn't automatically mean a separate scope or any kind of structuring from the code perspectice.
+
+As you will see later, the compiler doesn't even know about any references from one file to another, it handles files in separation without worrying about unresolved references. This might be a bit more complicated, but this explanation is enought for us right now.
+
+Exactly because of the fact that C++ doesn't see files, just your code as a whole, the important and somewhat surprising fact is that **your source files *don't* need to refer to each other in any way**. If you call a `log` function within your `main` function, you *don't* need to tell your `main` function where to find the `log`. There is a separate tool called **linker**, and it's job is to find it for you. It will ensure that there is only one funcion like that in your entire project, so it will be unambiguous which one to use when you call it.
 
 So I have to emphasize this a bit more, because this is also something no one emphasized for me.
 
