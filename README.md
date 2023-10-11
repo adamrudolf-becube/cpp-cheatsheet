@@ -274,6 +274,8 @@ In general, start as local as possible, and gradually go further and bigger and 
 ### What to include where
 
 - Prefer to include things in the `.cpp` file rather than the `.h`. This helps to reduce compile time. Your clients include the header, so every include the header has, the client needs to pull in. Only include things in the header if you need to. Think about forward declarations as well.
+- Don't indluce `.cpp` files into another as it can cause double definition errors, otherwise you know what you are doing and you have a good reason to do that
+- Put definitions into the `.cpp` file, and try to aviod it in the `.h`, because headers might be included several times. If you need function definition in a header, static or inline functions are preferred
 
 Note, the PIMPL idiom can help to reduce your header code as well.
 
@@ -318,27 +320,86 @@ More about rule of 3/5/0 [here](https://en.cppreference.com/w/cpp/language/rule_
 
 ## How the compiler works
 
-This part will be more like a fluent text of training material, since I am also earning it as I am writing it, trying to collect a good training material, short, just to satisfy the needed knowledge to develop. I have never seen such a collected material containing why things are the way they are, why and how it is different from other programming languages, which is weird, as compiling and linking is a very important and basic topic.
+This part will be more like a fluent text of training material, since I am also learning it as I am writing it. My goal is to collect a good training material, just short enoug, to satisfy the needed knowledge to develop. I have never seen such a collected material containing why things are the way they are, why and how it is different from other programming languages, which is weird, as compiling and linking is a very important and basic topic.
 
 So the basic idea is the same as in other programming languages: split the code for the sake of modularity and reusability.
 
-### My confusion - how C++ is different
+### My confusion - C++ is different
 
-So to begin with, I will use functions in my language for the sake of simplicity, but these toughts apply to practically anything you can "import" in a generic sense i.e. you can define and use in different files.
+In my examples I will talk about functions. This is only for the sake of simplicity, these toughts apply to practically anything you can "import" in the general sense, like classes, constants and other exotic animals.
 
-If you are familiar with other programming languages, you might think in a way I was thinking, which got me into some confusions. In Python, or JavaScript, you need to import the external libraries/packages/functions/classes in order to use them in your file. You practically have an entry point for the execution, and whatever external code is needed, the compiler/interpreter follows those links on demand. If those include other things, they are followed as well, causing some kind of recursive tree of dependencies.
+Knowing other programming languages, I brought some assumptions to C++ that turned out to be false. This caused some confustions. Normally I would just explain how C++ works instead of detailing my wrong assumptions, but I know for sure there are other people who got the same confusion. I had those "click" moments when I realized some simple things, but no one bothered to tell me those, I guess because it was obvious for them. No matter how experienced colleagues I had, how good video tutorials and blogposts I was consuming, there were some things no one has ever told me. So now I will tell you things that would have helped me in a very simple way.
 
-In C++ we have `#include` directives, which might look similar to - for example - the `import` keyword in Python or JavaScript/TypeScript. And, altough the everyday usage of them is similar, the basic mechanism of how C++ finds external code is very different, and you need to have discipline and understanding of how it works, otherwise you might get by for a while, but will eventually start to get weird errors that are really hard to understand.
+The base problem is, when you have code spread over multiple files (kind of always) every programming language has to have a mechanism to find the corresponding function definition for a function call. When you call a funcion, *some code* is executed in the end of the day, and a machine has to be able to find the function body starting from the function call, otherwise the code would be impossible to run.
 
-At first, let's try to forget about `#include` totally. Pretend you have never heard of it. It will come later.
+When I debug a JavaScript code and see a function call, I scroll up and it has to be obvious which `import` statement brought it in. That statement has a reference to the file, and all I need to do is to follow it. The file I found this way either has the function definition or some kind of forwarding, so I might need to do further steps, but eventually I have to be able to follow the links until I find the definition. I am really sure the chain of links can be followed, because this is exactly what the interpreter does to find the code to run, and if an algorithm can do that, I can do that manually. Otherwise I wouldn't be able to run the code.
+
+Pretty much the same thing happens in other languages. In Python you don't see the explicit path in the code, but there is a register in `PYTHONPATH` where the package names can be resolved to folders and eventually `.py` files. Point is, following the imports, you will eventually find the definition of the function.
+
+Based on my vague memory, C# and Java does something similar.
+
+When I was a beginner C++ developer, I was thinking "yeah, it is called `#include` in C++, but that's just a slightly different word". So when we used classes, we included them. We had to include the header files, but I accepted, okay we separate the interface from the implementation, because that's how you do it in C++.
+
+But I was very confused by some basic things. Let's say we wnat to use the `MyClass` to our client code, let's call it `main.cpp` for simplicity. `MyClass` has two files, `MyClass.h` and `MyClass.cpp`. In `main.cpp` we import the `MyClass.h`, which looked like what I expected. When I call a method of `MyClass` inside `main.cpp`, if I need to follow where it comes from, I follow the includes. I get to `MyClass.h`. But that doesn't contain the bodies of the functions. So my Python brain was thinking, okay, so I guess `MyClass.h` includes `MyClass.cpp` so I can follow the links to resolve the link to the function body.
+
+But no. It's the other way arounf. It's `MyClass.cpp` including the `MyClass.h`. So how does it work? Both references point towards the `.h` file, and no one ever includes `MyClass.cpp`.
+
+And this is because the `#include` statement might look a bit like the `import` in other languages, but it has a **totally different purpose**. This is the one thing that clicked me, the one thing that no one has ever told me:
+
+> Unlike `import` in other languages, in C++ the mechanism to find the corresponding function definitions for a function call has **nothing to do** with the `#include` directives. These are two separate mechanisms.
+
+The "danger" is that the whole thing with the `#include`s *look like* they do what the `import` in those languages, but they don't actually. And with that, you can get by for a while, but those subtle differences can cause errors and confusions that are really hard to understand without knowing the grounds.
+
+The two mechanisms obviously are related in some way, but you need to understand the basics to understand how it works.
+
+At first, let's try to forget about header files and even `#include` totally. Pretend you have never heard of them. They will come later.
+
+### Basic compilation - get a simple C++ file to executable
 
 So the basic idea is to turn your text file (of C++ code, a.k.a. your *source code*) into executable binary. This is a translating process, and it's done by the tool called the **compiler**. Nothing weird so far.
 
-To be simplified, when you compile your code, each of your files are translated into separate binaries. These are called object files, usually gaving the `.obj` extension. You might use different files, and you might call a function in a file, that is defined in another file.
+To be simplified, when you compile your code, each of your files are translated into separate binaries. These are called **object files**, usually gaving the `.obj` extension.
 
-The first, important thing to understand is that the compiler automatically loops through *all* the source files, regardless whether they eventyally get used or not. The compiler is not following any links or dependencies, just compiles all the files, and generates the object files for them. We will add some details later, but this is the basic idea, it's enought for now.
+Usually you have more than one file, and in some of your files you use funtions that are defined in other functions. This means that these `.obj` files - despite of being binaries - don't make sense in themselves, they contain unresolved references. But it's not a mistake, this is how it should be at this stage. They will be connected later.
 
-The important and somewhat surprising fact is that your source files *don't* need to refer to each other in any way. If you call a `log` function within your `main` function, you *don't* need to tell your `main` function where to find the `log`. There is a separate tool called **linker**, and it's job is to find it for you. It will ensure that there is only one funcion like that in your entire project, so it will be unambiguous which one to use when you call it. So you can start writing code without any imports or such? Basically yes.
+The first, important thing to understand is that the compiler automatically loops through *all* the source files, regardless whether they eventyally get used or not. The compiler is *not* following any links or dependencies, just compiles all the files, and generates the object files for them. As you will see later, the compiler doesn't even know about any references from one file to another, it handles files in separation without worrying about unresolved references. This might be a bit more complicated, but this explanation is enought for us right now.
+
+The important and somewhat surprising fact is that your source files *don't* need to refer to each other in any way. If you call a `log` function within your `main` function, you *don't* need to tell your `main` function where to find the `log`. There is a separate tool called **linker**, and it's job is to find it for you. It will ensure that there is only one funcion like that in your entire project, so it will be unambiguous which one to use when you call it.
+
+So I have to emphasize this a bit more, because this is also something no one emphasized for me.
+
+Again, in JavaScript you can have two functions with the same name and parameter list, if they are in different files. It's no problem, because in the place of the usage it will be obvious which one you have imported. If you import them both, there will be a name clash, but then you can then alias one of the packages or something.
+
+In C++ it's different. Think of C++ in a way that it doesn't have files at all, everything is in one globas storage. Every function must occur only once globally, you cannot have two functions with the same name and parameter list even in two very different files. (You can in different namespaces, but that's a different story.)
+
+And here it is. This is your mechanism to find the function definition. If there is only one globally, that's the function to call. Simple.
+
+```cpp
+// log.cpp
+
+#include<iostrem>
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+//main.cpp
+
+// yes, something is missing from here, but not an `#include`. more on this soon
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
+
+It means you don't need to refer to the other fils, there is no need to `import` at all. You just use a function, and it will be executed, wherever your definition is. So why the hell are there `#include` directives? Well, we will get to that soon.
+
+So you can start writing code without any imports or such? Basically yes.
 
 But you guessed, it's not *that* simple.
 
@@ -346,9 +407,9 @@ But you guessed, it's not *that* simple.
 
 Well, it depends on what do you call "correct". It's important to distinguish between the compiling and linking phases. These are practically executed by two totally separate tools, under separate times.
 
-The compiler is not running your code, and actually in order to call a function, the compiler doesn't need to know what the function does. So tt's not the compiler's job to ensure that the function definition exists.
+The compiler is not running your code, and actually in order to call a function, the compiler doesn't need to know what the function does. So it's not the compiler's job to ensure that the function definition exists.
 
-But the compiler are doing some check for you to avoid certain mistakes. For example, if you call a function, the compiler checks whether you provide the argumnets with the correct types, and whether you use the return value in a correct type - or at least some implicit conversions can be made. The compiler can actually check a lot of things, these are called compiler check, and you might not have it in those other mentioned languages such as Pyton or JavaScript. This is a huge benefit of the strongly typed languages such as C++.
+But the compiler is doing *some* check for you to avoid certain mistakes. For example, if you call a function, the compiler checks whether you provide the argumnets with the correct types, and whether you use the return value in a correct type - or at least some implicit conversions can be made. The compiler can actually check a lot of things, these are called **compiler check**s, and you might not have it in those other mentioned languages such as Pyton or JavaScript. This is a huge benefit of the strongly typed languages such as C++.
 
 But how does the compiler know what kind of arguments a function expects or what kind of return value it has if you don't "import" it or refer to it in any way? Good question. The compiler actually needs something to run the checks agains. This something is called **declaration**.
 
@@ -356,13 +417,40 @@ In C++ you can declare a variable, a function, a class, practically anything, an
 
 Sticking to the above example: you have a `main.cpp` where you use a `void log()` function. The definition i.e. *what* the function is actually doing is defined in `log.cpp`. The `main.cpp` doesn't need to know it. It only needs to know it's name, return type and parameter list with types. This is called the **function signature**. So in `main.cpp` you need to *declare* the function, using the functions's *signature*, something like this: `void log();`. This is the same as the function's definition, but instead of the curly brace block, there is just a semi colon. It is very important to have exactly the same signature in `main.cpp` and in `log.cpp`, that's how the *linker* will match the definition to the usage. But you still don't tell the `main.cpp` *where* to find the definition. Additionally this declaration is enough to tell the compiler how to run those checks.
 
+This is a perfectly fine program with two files. Note that there is no `#include` or any reference to `log.cpp` in `main.cpp`.
+
+```cpp
+// log.cpp
+
+#include<iostrem>
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+//main.cpp
+
+void log();
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
+
 To sum it up, in order to use a function (or class or variable or whatever) you don't need the definition, but you need a declaration. A declaration is enough information for the compiler to run the compiler checks. It's like saying: hey, don't worry, this funciton exists, and it looks like this.
 
-Sometimes we talk about **forward declaration**. A forward declaration is just a declaration, nothing technically different. It only means that you declare something in the code before you define it, so practically you let the compiler to work with something you haven't defined yet. For a class, it might be as simple as `class MyClass;` just telling the compiler "don't worry, we have a class called `MyClass`, it will be defined for the linker, trust me.
+Note: sometimes we talk about **forward declaration**. A forward declaration is just a declaration, nothing technically different. It only means that you declare something in the code before you define it, so practically you let the compiler to work with something you haven't defined yet. For a class, it might be as simple as `class MyClass;` just telling the compiler "don't worry, we have a class called `MyClass`, it will be defined for the linker, trust me".
 
 ### So then how does the *linker* know I used the correct function?
 
-If you declare and use something in a file without definition, it will result in an unresolved reference in the object file. It's fine, because - as we mentioned - it's not the compiler's job to find those things. It also means that the object files in general case cannot be ran in themselves - they are incomplete programs. With other words, the compiler only considers files in separation, and it's the linker's job to see your project as a whole.
+If you declare and use something in a file without definition, and simply just compile it, it will result in an unresolved reference in the object file. It's fine, because - as we mentioned - it's not the compiler's job to find those things. It also means that the object files in general case cannot be ran in themselves - they are incomplete programs.
+
+With other words, the compiler only considers files in separation, and it's the linker's job to see your project as a whole.
 
 It's the linkes's job to resolve those unresolved references. So if you are using this undefined `void log();` function in your `main.cpp` basically you can run into 2 linking problems: after searching in the object files the linker either doesn't find a definition at all, or finds more than 1 of them. Both are linking errors, meaning your final program cannot be made.
 
@@ -384,15 +472,21 @@ So we have reached the point where we actually start to need some kind of import
 
 While most of the modern languages have sophisticated ways to refer to other files, in C++, and earlier in C, they have found a very simple solution. They just made a separate tool that can copy-paste code from one file to another. The idea is that you have specific directives to this program, and it does text modifications to practically generate the C++ code for you. With that you can have the declarations in one single, central place, and all the clients could just automatically copy them into themselves. And this is the `#include` statement. You might probably already know that the `#include` just finds the target file, takes its contents as text and literally copies it in the place of the `#include` statement.
 
-So this is - again - another and last tool we mention. Since it processes text (takes textfiles and input, and produces textfiles as output), and results in proper C++ code that is fed to the compiler then, it's called **preprocessor**. There are other preprocessors out there, the common in them is that, unlike a programming language, they don't result in executable code, but instead result in another formal language. The source file of them is usually a mix of the target language and directives to the preprocessor just like your source code has preprocessor directives and C++ also.
+So this is - again - another and last tool we mention. Since it processes text (takes textfiles and input, and produces textfiles as output), and results in proper C++ code that is fed to the compiler then, it's called **preprocessor**.
 
-Another well-known preprocessor is PHP which is a html preprocessor, and actually means **P**hp, **H**ypertext **P**reprocessor, being a recursive abreviation. And similarly, a PHP code is usually a mixture of html and PHP code. If you feed that code to a PHP preprocessor, it finds the PHP parts, executes them and - in normal case - results in a valid and pure html code.
+There are other preprocessors out there, the common in them is that, unlike a programming language, they don't result in executable code, but instead result in another formal language. The source file of them is usually a mix of the target language and directives to the preprocessor just like your source code has a mixture of C++ and preprocessor directives.
 
-This is nothing different with out preprocessor that resolves the includes, and other preprocessor directives, for example macros or conditions that can include and exclude C++ source code based on certain conditions.
+*(Side note: another well-known preprocessor is PHP which is an html preprocessor, and actually means **P**hp, **H**ypertext **P**reprocessor, being a recursive abbreviation. And similarly, a PHP code is usually a mixture of html and PHP code. If you feed that code to a PHP preprocessor, it finds the PHP parts, executes them, replaces them by html and - in normal case - results in a valid and pure html file.)*
+
+This is nothing different with our preprocessor that resolves the `#include`s, and other preprocessor directives, for example macros or conditions that can include and exclude C++ source code based on certain conditions.
 
 The `#include` is not at all some kind of sophisticated reference that gets resolved during compile or runtime. Think of it literally as copy paste. You can literally have a file containing only a closing curly brace, and in another file with a function that misses the closing curly brace, but includes the previous file there. The preprocessor will simply paste the curly brace and the compiler will only see a properly closed function.
 
-Note that because of this it does matter where you put your include directives, as well as their order. Altough in normal cases they should be independent, it might happen that they depend on each other and having the wrong order might cause errors - or maybe worse - hide existing errors and just work when they shouldn't. But more about that a bit later.
+One note here is that since the preprocessor by its nature runs before the compiler, the compiler doesn't know about the preprocessor directives. The compiler gets the pure C++ files, where all the `#include`s are already replaced by the contents of the included files. In this sense the compiler doesn't have and cannot have files that point to each other, for the preprocessor they are really just standalone files.
+
+Since the `#include` directives can somewhat change the original file structure, the compiler doesn't necessarily get exactly the file structure how you created it. That's why there is a subtle distinguish: the files the compiler gets are called **translation units**. So one `.obj` file is created for one translation unit. If you include a source file from another, 2 files might be merged, resulting one `.obj` file from files that were 2 separate `.cpp` files in your source code. That's why sometimes we talk about files, sometimes translation units. Most of the cases one `.cpp` file is one translation unit, so it's kind of think of them as the same thing.
+
+Another note is that because of how the `#include` works, it *does* matter where you put your include directives, as well as their order. Altough in normal cases they should be independent, it might happen that they depend on each other and having the wrong order might cause errors or (maybe worse) hide existing errors and just work when they shouldn't. But more about that a bit later.
 
 So why we had to discuss all the mechanisms with linkers and magic dependency resolution without imports and everything if we end up still including the dependencies? Can I just pretend its Python and `#include "log.cpp"` in my `main.cpp`?
 
@@ -404,7 +498,64 @@ If you define a function called `log()` in `log.cpp`, and then include it in the
 
 No, not in C++. Remember, what we discussed.
 
-C++ loops through *all* the source files. First, it runs the preprocessor, resolbing - among others - the `#include` statements, that are simply text copies. At this stage the whole contents of your `log.cpp` get copied into `main.cpp`. We have also discussed that it might be good for the compiler, since all the files will have the declarations for all the functions they were trying to call, but when the linker goes through all the object files, it will notice that there is 2 definitions of `void log()` function. One in the original file `log.cpp`, and one in `main.cpp`, because the `#include` directive copied it there. Since you cannot have two definitions of the same function, that is an error.
+C++ loops through *all* the source files. First, it runs the preprocessor, resolving - among others - the `#include` statements, that are simply text copies. At this stage the whole contents of your `log.cpp` get copied into `main.cpp`.
+
+Before the preprocessor:
+
+```cpp
+// log.cpp
+
+#include<iostrem>
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+//main.cpp
+#include "log.cpp"
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
+
+We have also discussed that it might be okay for the compiler, since all the files work standalong, but when the linker goes through all the object files, it will notice that there is 2 definitions of `void log()` function in the global scope. One in the original file `log.cpp`, and one in `main.cpp`, because the `#include` directive copied it there. Since you cannot have two definitions of the same function, that is an error.
+
+After the preprocessor:
+
+
+```cpp
+// log.cpp
+
+// contents of iostream ... lots of lines
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+//main.cpp
+
+// contents of iostream ... lots of lines
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
 
 Let's recap what we have done so far?
 - We can actually define a function in a file, and call in another without having any explicit connection between the two files, but we need a declaration in the place of the usage
@@ -417,9 +568,11 @@ Remember, in the places of usage, we only need the *declarations*, not the *defi
 
 In our example there will be the original `log.cpp` file with the *definition* of `void log() {/*...*/}`, and another file, which contains the *declaration*: `void log();`. Our `main.cpp` can `#include` the file with the declaration. So in this case `main.cpp` doesn't need to explicitly type down the declaraion of that funciton. In fact, if there are several files using the same log, all they need to do is to include the file with the declarations.
 
-But wait, isn't it a problem that there will be the same declaration all over the place? If I include that file to 10 places, the linker will find the same declaration 10 times. Yes, it will. But that's no problem. Since it's crucial to find the corresponding definition to a function call only once to know what code to execute, we don't have a reason to limit the number of declarations, so including the declaration many times doesn't cause the same linking problem as including the definition.
+But wait, isn't it a problem that there will be the same declaration all over the place? If I include that file to 10 places, the linker will find the same declaration 10 times. Yes, it will. But that's no problem.
 
-You can even write this in the same file:
+When the computer (whichever mechanism in whichever language) has to find the code to run, that must be unique, because at the end of the day it needs to run some code. That's why in C++ the definition needs to be unique. But we don't have a reason to limit the number of declarations, so including the declaration many times doesn't cause any linking problems.
+
+You can even repeat the same declaration over and over again in one single file:
 
 ```cpp
 void log();
@@ -427,9 +580,37 @@ void log();
 void log();
 ```
 
-It doesn't make sense, but it's not a problem.
+It doesn't make sense, but technically it's not a problem.
 
-So where are we now? Should we create a `log_declarations.cpp` file?
+So where are we now? Should we create a `log_declarations.cpp` file? Something like this:
+
+```cpp
+// log.cpp
+
+#include<iostrem>
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+// log_declarations.cpp
+
+void log();
+```
+
+```cpp
+//main.cpp
+#include "log_declarations.cpp"
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
 
 Well, that is one option. Technically it would work. But this file would only be used by other files via the `#include` directive, never as a standalone file. It means that there is no point of compiling this file into an object file. It's safe to skip it. And since compilation is a long process, it would be quite a huge waste of time and resources to compile these files in themselves.
 
@@ -437,49 +618,96 @@ We need a way to tell the compiler to leave these special "declaration files" al
 
 These "declaration files" have a special name: they are the famous **header files**. By convention, they have the extension `.h` or `.hpp` or `.hxx`. These extensions could be anything, you can set your compiler's settings to anything, but these are the most commonly used conventions, as well as the default settings to practically all the compilers, so if you don't specify otherwise, your compiler will treat these as header files.
 
+```cpp
+// log.cpp
+#include "log.h"
+#include <iostrem>
+
+void log()
+{
+    std::cout << "Log this out" << std::endl;
+}
+```
+
+```cpp
+// log.h
+
+void log();
+```
+
+```cpp
+//main.cpp
+#include "log.h"
+
+int main()
+{
+    log(); // magic, a.k.a. "linker" finds the definition in the other file
+    return 0;
+}
+```
+
 So, again what the client code needs to do is to include the header file. It only "pulls in" the declarations to perform compiler checks, but it doesn't resolve the reference to the actual definition. That is done by a totally other process, performed by the linker.
 
 So usually when you create a new library or class, you always create 2 files: a header and an implementation file, the header containing only declarations, and the `.cpp` implementation file specifying the actual function bodies. And then the `.cpp` file includes its own header, so it knows about its own declarations, that are most important in case of classes, because otherwise you cannot implement member functions outside the classes.
+
+Note that having a matching pair of `.cpp` and `.h` files is a convention, and not a technical requirement. You can have a header file to declare a class with several class methods, and implement those methods in totally different `.cpp` files that are all over the file structure and have names different from the header file. It's fine. But for simplicity we usually have the `.cpp` and `.h` together, with the same name, otherwise it would be confusing.
+
+#### Why does the implementation include its own header?
+
+So in our case, why does the `log.cpp` include the `log.h`?
+
+In this simple example it's not important. But, for example in classes, you declare a class in the `.h`, and the corresponding class method definitions in the `.cpp`. You couldn't do that without having the class declarations.
+
+Also, if you only have a set of functions in the `.cpp`, if you include the header, you will have forward declared all of them, so all of them can refer to any of the others.
+
+It's also beneficiary to have knowledge about the exact signatures you promise to the outside world, so it's easier to make sure you actually implement the functions the outside world is using.
 
 Phew, that was long and complicated, let's do a summary.
 
 ### Summary
 
 - In C++ you can obviously define a function, or class or whatever in a file and use it in another one
-- The place of usage (client code) doesn't need an explicit reference to know *where* to find the definition, but it needs a *declaration* to perform the compiler checks
-- The place of definition is a `.cpp` (not always) file, and along with that there is usually a header (`.h` or `.hpp`) file is shipped, only containing the declarations. The `.cpp` file includes its own header.
-- Client code only needs to include the header file, so it will know what kind of functions and classes are published, and how to perform the compiler checks. Later in the linking phase the references to the implementations will be resolved by the linker.
+- Funciton signatures must be unique in the global scope, that's how the linker finds the definition to the usage
+- Because of this, the place of usage (client code) doesn't need an explicit reference to know *where* to find the definition, but it needs a *declaration* to perform the compiler checks
+- The place of definition is a `.cpp` file (usually), and along with that there is usually a header (`.h` or `.hpp`) file is shipped, only containing the declarations. The `.cpp` file includes its own header.
+- Client code only needs to include the header file to obtain the declarations, so it will know what kind of functions and classes are published, and in order to perform the compiler checks.
 - The preprocessor copies the declarations to the client code. Then the compiler compiles the `.cpp` files, but not the headers.
+- Later in the linking phase the references to the implementations will be resolved by the linker.
 
 ### Some notes and clarifications
 
-- Normally you should never include `.cpp` files, only headers.
-- However, it might be normal to include a `.cpp` file in another, if you make sure no double definition error will happen, for example if you make sure only the includer gets compiled and not the included. In this case obviously only one object file will be created for the affected files. Therefore it's a simplification to say one object file is created for each `.cpp` file. So first the preprocessor is run, creating **translation units**. Then one `.obj` file is created for each translation unit. However, these are in most of the cases map directly to the `.cpp` files.
-- It might not be necessary for a `.cpp` file to include its own header (?)
+- Normally you should never include `.cpp` files, only headers, to avoid double definition errors.
+- It might not be necessary for a `.cpp` file to include its own header
+- While in other languages you can find function definitions starting from the function call and following links of imports, you cannot do that in C++. C++ is more like a global blob where functions have to be unique
+- Mechanism to find the corresponding definition to a function call **has nothing to do** with the `#include` statements.
+    - The `#include` statements are to have a central definition for declarations which is important for static checks performed by the compiler
+    - The link resulution is done by the linker at a later stage exploiting the fact that there is only one of every function signature
 
-Note that while in - for example - JavaScript you can do the following: you see a function called, you follow it to the import statement, and the import statement tells you where the function is coming from, so following the link, you will eventually find the definition.
+#### Why is it different in other languages?
 
-It's not like that in C++.
+There is an important fact I haven't emphasized yet:
 
-Altough usually you find the *header* file following the "include link", the header doesn't have a reference to the implementation.
+> C++ doesn't care about file structure
 
-When I was a beginner, I expected the header to include the implementation, so the links can be followed, and I tought this is the way eventually I or the computer will find the implementation. But it's not, the purpose of the includes is technically only to copy forward declarations into the client file, and the link to the definition is done by the linker, that has nothing to do with how the `#include` directives are structured. Conventionally the header files are coupled with the implementation, but that's just a convention, technically speaking the headers could live a totally separate life from the implementations, having even different structure, different filename, and the usage of headers is not mandatory at all anyway.
+Different files are not really different scopes.
 
-So if this sounds so logical, why don't we have these in other languages? Other languages prefer usability for the price of slower performance. They probably use similar and much more automated mechanisms in the background, they provide ways that are safer to use, and you have to worry about less things. But, to be honest, I cannot really answer this question in detail as I am not familiar with the under-the-hood implementation of how an import in Python works.
+JavaScript is an interpreted language, that starts to read one file and execute it. As it finds dependencies, it is dynamically bringing them in. What functions exist in other files, it doesn't even know about until they actually start to get used.
+
+C++ has a compilation phase where the whole project is treated at once as one big scope. The linker sees everything, and there is no boundaries between files. That's why it needs to be unique, that's why there is no need for imports, but that's also why it is not only not needed, but even problematic to include one source from another. All source files are seen by the linker and they have to exist once.
+
+Maybe there wouldn't evem be needed to have header files, if the comiler wouldn't do those checks, but we should be very glad that they do.
+
+So as a result of this whole thing, eventually you use external code in your file, you will end up including the header, kind of where that code comes from. Similarly to how you import things in Python and JavaScript. But remember, it's not the same.
 
 ### Summary of the compilation process
 
 Generally there are 3 steps when your C++ code is turned into executable:
 
-1. **Precompiling** - practically turns precompiler directives into generated C++ code the compiler can read. Most commin is the `#include`
+1. **Precompiling** - turns preprocessor directives into generated C++ code the compiler can read. Most common is the `#include`
 2. **Compiling** - turn C++ code to separate binaries, that don't run standalone, called object fiels (`.o` or `.obj`)
 3. **Linking** - link the object files together, for example resolve called functions that are defined in a different file
 
-We see these in details now.
-
-#### Precompiling
-
-TODO
+We see some of these in details now.
 
 #### Compiling
 
@@ -491,56 +719,18 @@ C++ doesn't care about files, file structure has no meaning to C++. (Unlike in J
 
 Every C++ file will be treated as a translation unit an will be resolved as a object file. It is possible tough to include one `.cpp` file to another and compile them as one translation unit.
 
-#### Don't include `.cpp` files in other `.cpp` files
+##### Notes
 
-Let's say you have a `foo.cpp` file, and define a function called `void foo(int a) {/*...*/}`. You have a `main.cpp` that wants to use it. You include `#include "foo.cpp"`. The precompiler will just copy and paste the contents of `foo.cpp` into you `main.cpp`. Your compiler will compile both `main.cpp` and `foo.cpp`, and there will be 2 definitions of `void foo(int a) {/*...*/}`.
-
-Including a `.cpp` file in another doens't always cause errors, but is generally considered a bad practice.
-
-You should define the declarations in header files (`.h` or `.hpp`), add the corresponding definitions in a `.cpp` file, and include the header file in both the implementation file and the client code.
+- If you have a declaration of a function, and even call it, the single file will compile into an object file without problem. Because it's the linker's job to follow the reference, and the compiled object files are not meant to be used standalone. It "believes" that the function will be defined somewhere. The linking will fail.
+- It is okay to declare and not define a function as long as you don't use it. Missing implementation is a problem for an actual function call. In this case both the compilation and linking will succeed.
+- Tough if you call the missing function in an unused function, it depends. If you have an unused function (dead code) that calls a function with the missing implementation, the compiler knows that other files might be using it, so it gives you an error. But if you mark it as `static`, making your dead code private to your file, the compiler will validate that noone is using that function call, so you are essentially calling the missing function in dead code, and you will get no errors.
 
 ---
 
 IN  PROGRESS FROM HERE
 
-### My explanation to myself
-
-- Files don't need to refer to each other. If you have a `log()` function in `log.cpp`, and you use it in `main.cpp`, all you need to to is to declare the function signature in `main.cpp` so the compiler can check if you use it correctly. Since all `.cpp` files get compiled automatically, regardless of the indluces, the linker will be able to find the definition.
-- If you have a declaration of a function, and even call it, the single file will compile into an object file without problem. Because it's the linker's job to follow the reference, and the compiled object files are not meant to be used standalone. It "believes" that the function will be defined somewhere. The linking will fail.
-- It is okay to declare and not define a function as long as you don't use it. Missing implementation is a problem for an actual function call. In this case both the compilation and linking will succeed.
-- Tough if you call the missing function in an unused function, it depends. If you have an unused function (dead code) that calls a function with the missing implementation, the compiler knows that other files might be using it, so it gives you an error. But if you mark it as `static`, making your dead code private to your file, the compiler will validate that noone is using that function call, so you are essentially calling the missing function in dead code, and you will get no errors.
-- Header files might be included several times, that's why you shouldn't implement functions there. If you do, they should be static.
-
-#### My confusion before
-
-If you are familiar with other languages. 
-
-https://www.toptal.com/c-plus-plus/c-plus-plus-understanding-compilation
-
 
 ## Questions
-
-### Question - how to link
-
-There is a main program, that includes a header from my project (MyClass.h). The header has a cpp file with the implementation (MyClass.cpp), and also includes the MyClass.h. The cpp files, according to the practice, don't refer to each other. Otherwise these files are structured in the common way, i.e. the header contains declarations, and the cpp specifies the implementations, for example for the class methods.
-
-So how does the linker know, how to find the implementations? Let's say I call myClass->myFunction(), which is declared in the MyClass.h, but implemented in the MyClass.cpp.
-
-First, the header is kind of in the "middle". The client code and it's own implementation are exactly the same from the include structure perspective.
-
-My understanding: from the client code, including the "MyClass.h" provides (forward) declarations, that are enough to satisfy the compiler, but obviously not enough runtime.
-
-Naively I would think, when the compiler runs, it starts witht he entry point, and tries to follow the includes, like "okay, I compile this single file. AHa, so this is included, then I need to compile this too", etc. This approach wouldn't work, as the implementations are never included, so they are not part of a dependency tree built this way.
-
-So my understanding is, the compiler is rather compiling all the files within the project, or whatever is set in the compiler's configurations, point is, it is compiling a list of files regardless of their include relations.
-
-Now that I think of it, it makes sense, as includes are not visible for the compiler, they are already resolved by the preprocessor at compile time.
-
-So if we put everything together nicely, we will have usage(s) (cliend code), declaration (h) and definition(cpp) of each function, just like we would have them in one single file. What connects them is the signature. There can be only one declaration and also definition of a function signature.
-
-Self test:
-- So can we have a class declaration in the header, and provide implementation in different files? Should be, if I am correct.
-- If both includes the hearder, what if I only write 2 cpp files both declaring the same functions, without referring to each otherÜ
 
 ### Question - include header dependencies from the cpp
 
