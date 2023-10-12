@@ -41,25 +41,38 @@ The heap has some advantages over the stack: it's bigger, and anything stored in
 
 ### What is "ownership"
 
-Raw pointers point to obects in the heap. They need to be manually deleted (i.e. memory needs to be freed to not cause a leak). When data is created and destroyed in the same scope, it's not complicaed, but in this case use of pointers is often not needed.
+Raw pointers point to obects in the heap. They need to be manually deleted (i.e. memory needs to be freed to not cause a leak). When data is created and destroyed in the same scope, it's not complicated, but in this case use of pointers is often not needed.
 
 Pointers are often passed down functions and complex features, or returned by a factory, and you need to keep track of whose job is it to delete it.
 
 > Ownership means “responsibility to cleanup”. The owner of the memory is the one who has to delete its pointer.
 
-Deletion can either be explicit (through the keyword delete of the function free() regarding raw pointers) or bound to the lifetime of an object (through smart pointers and RAII), meaning typically that an explicit deletion happens in the destructor of the owner.
+Deletion can either be explicit (through the keyword `delete` of the function `free()` regarding raw pointers) or bound to the lifetime of an object (through smart pointers and RAII), meaning typically that an explicit deletion happens in the destructor of the owner.
 
-RAII (Resource Allocation Is Initilaization) is a concept of having stack allocaed objects owning heap allocated objects. They allocate memory in the contructor, and delete them in the destrucor. If in your client code you don't use the heap object direcly any more, only the stack object, you get rid of the coupling (i.e. your responsibility to not forget to delete if you allocated), as your objects will be deleted automatically when the scope ends. Smart pointers do exactly this for you, but it's totally okay to implement your own logic as an alternative to smart pointers, if you need to (don't reinvent the wheel).
-
-Ownership is not a builtin concept to the language, it's more like an approach to make sure heap allocated memory gets freed, and there is one or more entities at all times whose responsibility is to delete.
-
-In RAII the lifeime of the heap object is bound to the lifetime of a stack object, which means you loose the advanage of heap object surviving the scope. Except, in this case, the RAII object can get its internal poiner and hand it over to another object, like pass it to a function. This is called moving the ownership, but more about it later.
+Ownership is not a builtin concept to the language, it's more like an approach to make sure heap allocated memory gets freed, and there is one or more entities at all times whose responsibility is to delete, kind of a best practice if you like.
 
 More on that in this very good article: [Who owns the memory?](https://belaycpp.com/2022/03/17/who-owns-the-memory/)
 
+#### RAII
+
+RAII (Resource Allocation Is Initilaization) is a concept of having stack allocated objects owning heap allocated objects. They allocate memory in the constructor, and delete them in the destrucor. If in your client code you don't use the heap object direcly any more, only the stack object, you get rid of the coupling (i.e. your responsibility to not forget to delete if you allocated), as your objects will be deleted automatically when the scope ends. Smart pointers do exactly this for you, but it's totally okay to implement your own logic as an alternative to smart pointers, if you need to (but don't reinvent the wheel).
+
+In RAII the lifeime of the heap object is bound to the lifetime of a stack object. You might think you loose the advanage of heap object surviving the scope, but that's not the case. The RAII object can get its internal poiner and hand it over to another object, like pass it to a function.
+
+This is called moving the ownership, and a whole topic is organized around it, called **move semantics**, in conrast of **copy semantics**.
+
 ### Copy semantics
 
-Copying the actual data of the object to another object rather than making another object to point the already existing object in the heap.
+Copying the actual data of the object to another object.
+
+- **Shallow copy**: e.g. you copy an object, but if it has pointers and references, you only copy the pointers and references. The new object will have its own pointers, but they will point to the same resources.
+- **Deep copy**: copying the whole object recursively, copying the underlying pointed at objects as well.
+
+*Note*: if you perform shallow copy, be careful about the ownership. Both objects might point at the same data, and if both of them try to delete it, it might cause problems.
+
+Copy semantics is higly connected to copy constructor and copy assignment operator. You can read more about these in [Special member functions and their rules](#special-member-functions-and-their-rules).
+
+See also `memcpy`, a function that does a bitwise copy regardless of types or null terinating characters.
 
 ### Move semantics
 
@@ -149,7 +162,7 @@ The functions (in certain cases) the compiler automatically generates for you (f
 
 - **Default constructor** - constructor without parameters and special behaviour: `A() {/*...*/}`
 - **Destructor** - `~A() {/*...*/}` there is only one desctructor, and it cannot have arguments
-- **Copy constructor** - constructor with one parameter with the type of (lvalue) **reference** the class itself: `A(A& other) {/*...*/}`
+- **Copy constructor** - constructor with one parameter with the type of (lvalue) **reference** the class itself (or const reference): `A(A& other) {/*...*/}`
 - **Copy assignment operator** - `A& operator=(A other)` (obviously strongly connected to copy construction, see differences soon). Might accept the other by value or reference, or as `const` or `volatile`
 - **Move constructor** - similar to the copy constructor, but it accepts an **rvalue reference** and uses move semantics: `A(A&& other) {/*...*/}`
 - **Move assignment operator** - similar to the copy assignment operator, but accepts **rvalue reference** and uses move semantics: `A& operator=(A&& other)`
@@ -181,6 +194,10 @@ Both are used to initialize an object using another object of the same type, but
 
 Note if you would like to prohibit copying, you need to delete both.
 
+#### Move constructor vs move assignment operator
+
+Similar rules apply to the move constructor and move assignment operator as well
+
 #### Copy vs move
 
 - Copy works with lvalue references and copy semantics (new memory is allocated and copied by value)
@@ -194,7 +211,7 @@ With other words, can I misuse the intention of any of these?
 
 Yes. You as the programmer has the responsibility to fill the functions' body if you decide to override default functionality. You can use it in a correct and incorrect way. So for example having a copy constructor doesn't automatically enforce that an actual copy will take place. But *please* if you implement any of these, do it in a way they do what they promise.
 
-### How the assignment operator works (`=`)
+#### How the assignment operator works (`=`)
 
 First of all, it checks if the right side has an rvalue reference or not. If it does, move semantics are used, otherwise copy.
 
