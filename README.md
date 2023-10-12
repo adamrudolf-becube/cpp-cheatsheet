@@ -188,10 +188,18 @@ Note if you would like to prohibit copying, you need to delete both.
 
 Prefer move if you don't have a reson to copy as it's incomparably faster. Ever case is different, but some rules of thumb you can use move, if 1) you don't need to modify the value, or 2) if you actually want to make changes to the original value.
 
+#### Can I implement move semantics in a copy contructor? Or are these magically enforced?
+
+With other words, can I misuse the intention of any of these?
+
+Yes. You as the programmer has the responsibility to fill the functions' body if you decide to override default functionality. You can use it in a correct and incorrect way. So for example having a copy constructor doesn't automatically enforce that an actual copy will take place. But *please* if you implement any of these, do it in a way they do what they promise.
+
 ### How the assignment operator works (`=`)
 
-- If you assign to a new value, it's the move constructor: `MyClass my_object = other;`
-- If you use it with an existing value, it's a move assignment operator: `my_object = other;`
+First of all, it checks if the right side has an rvalue reference or not. If it does, move semantics are used, otherwise copy.
+
+- If you assign to a new value, the move/copy constructor is called: `MyClass my_object = other;`
+- If you use it with an existing value, it's a move/copy assignment operator: `my_object = other;`
 
 Copies value:
 - If they are value types, e.g. normal int: `int b = a` will have different memory addresses. Changing `b` doesn't change `a`
@@ -202,8 +210,11 @@ Copies value:
 
 ### Method pre- and postfixes
 
-#### Prefix
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
+    - Why do I need to explicitly mark something as `virtual`? Why is "no polymorphsm" default behaviour, if runtime polymorphism seems to be one of the main reasons to have inheritance?
+    - Virtual functions have some overhead and additioal complexity. The compiler needs to generate an array keeping track of function pointers, and pointers to follow references in order to find the implementation. This is called dynamic, or late, or runtime binding. On the other hand non-virtual functions are bound at compile time which is simpler and more efficient.
+    - But this usually doesn't cause a visible overhead
+    - In Java every function is virtual by default, unless you mark it as final. So this is simply a choice of C++
 - `static`: method doesn't get the `this` pointer as a hidden parameter. Function belongs to class instead of object instances. Can be used with or without instantiation.
 - ` = 0` : a function is pure virtual and you cannot instantiate an object from this class. You need to derive from it and implement this method. You cannot declare a class abstract explicitly, but any class containing pure virtual methods are abstract. Only virtual functions can be pure virtual.
 - ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the equal operator and copy constructor to prohibit copying)
@@ -302,17 +313,17 @@ Value objects and references are stored in the stack, while pointers are stored 
 
 If you have to use pointers, prefer smart pointers, because thay at least take care of the memory management problem, but still have the problem with the worse performance.
 
-General rule of thump, for both performance and safety reasons, prefer your values like this:
+General rule of thumb, for both performance and safety reasons, prefer your values like this:
 
 > value < reference < smart pointers (unique < shared) < raw pointers
 
 Where the items on the left have higher priority. If you have a value, start on the left, and if you cannot reasonably solve your problem with the concept, step one right.
 
 **Normal variable (value object)**
-- Lives in the stack
+- Lives in the stack, meaning:
 - Quick to initialize (fast memory allocation)
 - Automatic lifetime management (gets destroyed and memory freed when the scope ends with `}`)
-- **When to use**: all the time when you don't have reason not to
+- **When to use**: all the time when you can
 
 **Rerefence**
 - Wrapper around pointer (pointer with simplified syntax and some restrictions)
@@ -335,7 +346,17 @@ Where the items on the left have higher priority. If you have a value, start on 
 - Integer, storing memory address
 - Type is no bound to it, type only tells the compiler, how long the memory is (both void, int, long etc. poiners are just one integer, pointer points to the first byte, but pointed data usually occupies additional bytes)
 - When you initialize new data as opinter, it's always heap allocation
-- **When to use**: when an object or reference is not enough for your goals. See exampes in the upcoming parts.
+- **When to use**: when an object or reference is not enough for your goals. Includint, but not limited to
+    - When a variable needs to survive the scope and you cannot use references
+    - When you need to achieve runime polymorphism
+    - Dynamic size arrays and data structures (actually static too)
+    - Optional ("nullable") objects
+    - Decouple compilation units to improve compilation time (see PIMPL idiom)
+    - Resource management other than memory, like files or databases
+    - Callbacks and function pointers
+    - You use external code that expects them
+
+In the following parts I will explain these in more details.
 
 #### When to use pointers
 
@@ -351,12 +372,11 @@ You can move or copy the object. Copy is not performance effective, so you shoul
 
 You can also pass it by reference, and if you can, by all means, do that. But if the referenced object has ended its lifetime, using the reference might cause problems, so references are still somewhat bound to scopes.
 
+Moving means relabelling the owner without actually touching the object, and this can be achieved by pointers. See more about it at the section about [move semantics](#move-semantics).
 
-Moving means relabelling the owner without actually touching the object, and this can be achieved by pointers.
+So use pointers if another scope needs to access exactly the same object, but not a copy of it, and you cannot use references, because they are still too restricted by the scope.
 
-So use pointers if another scope needs to access exactly the same object, but not a copy of it.
-
-**You need polymorphism**
+**When you need polymorphism**
 
 If you need polymorphic behaviour, you need pointers.
 
@@ -364,8 +384,122 @@ It means that a piece of code can work on different classes that have a common b
 
 You want to call a funciton on this class, and you want each of your child classes to implement their own funciton.
 
-In C++ in this case the child classes function is not automatically called. The base class has to declare the function as virtual, and 
+In C++ in this case the child classes function is not automatically called. You need to do 2 things to achieve that:
 
+The base class has to declare the function as virtual, and the child class needs to override it.
+
+But still, if you create a child class instance and save it as a type of the base class, C++ will call the base class function, unless you use pointers. So you actually have to create a child class instance, and use it as a *pointer* to the base class, in order to handle the type as the base class but call the child classes function.
+
+```cpp
+#include <iostream>
+#include <memory>
+
+class Animal
+{
+public:
+	virtual void print()
+	{
+		std::cout << "This is an animal" << std::endl;
+	}
+};
+
+class Cat : public Animal
+{
+public:
+	virtual void print() override
+	{
+		std::cout << "This is a cat" << std::endl;
+	}
+};
+
+void run_virtual_demo()
+{
+	Animal animal;
+	Cat cat;
+	Animal cat_as_animal = cat; // Slicing happens here, cat looses its "catness"
+
+	animal.print(); // This is an animal
+	cat.print(); // This is a cat
+	cat_as_animal.print(); // This is an animal - should be a cat
+
+	std::unique_ptr<Animal> cat_as_animal_ptr = std::make_unique<Cat>(cat);
+	cat_as_animal_ptr->print(); // This is a cat - polymorphism achieved!
+}
+```
+
+*But why do I need pointers to achieve polymorhism? Why doesn' it just work out of the box?*
+
+This bothered me for a long time.
+
+When C++ needs to decide which function body to call belongs to a function call, it's called **binding**. Binding can happen at compile time (early binding) or at runtime (late binding). With the `virtual` keyword you are specifying to the compiler to use runtime binding.
+
+Runtime binding performs no magic, it is actuall done by C++ code, but this code is generated by the compiler.
+
+If you want to know more about it, google it, here is a short summary:
+
+Something called a VTABLE is created, that is a static array of function poiners. This VTABLE is a static data member of the class. This contains addresses of all virtual functions in the class. A poiner VPTR is then generated for each object instance. These can be maintained runtime to find the actual function to call.
+
+Since it's runtime data, it cannot be decided at compile time.
+
+But to perform type check, C++ compiler needs to know the exact type and size of a variable. You cannot do that if you don't know at compile time which class will be used at a place. But a pointer to a base and a child is the same size and can be the same type (base), so pointers can be used to achieve runtime polymorphism.
+
+Take the following example:
+
+```cpp
+Base c = Derived();
+```
+
+In this case, `c` is not a derived instance any more, it's a base, because in this case the copy constructor of base is called.
+
+C++ inherits a lot of things from C, this is also something that comes from there. The basic reason is, the compiler needs exact knowledge of how big something is in the memory. A base class and child class can be obviously different in memory, so when you assign a child class instance to a base class type, it hsa to be "sliced off", and it also actually becomes the base.
+
+We can imagine a kind of compiler that makes this work if the derived and base classes occupy the same amount of memory, but this is not the case in general.
+
+Pointers, on the other hand don't occupy as much memory (in general) as the pointed objects, so you can have an *actual* derived instance in memory, and a pointer to it which thinks it's a base type, because actually it is. They oppupy the same amount of memory, but it's type safe.
+
+*But why is it simpler in other languages?*
+
+Other languages just do these for you in the background, and it results in less control and less performance for better safety, less bugs and quicker development times. E.g. in Java everything is virtual by default, unless you mark them final. All the things about slicing and poiners are just implemented for you in the bacground, in return you have less low level control of the memory and less efficient compilaion (I might be wrong here).
+
+**Dynamic size arrays and data structures (actually static too)**
+
+Pointers are frequently used when working with arrays and data structures like linked lists, trees, and graphs. Pointers enable you to navigate and manipulate these structures efficiently. Even if you use arrays and never see pointers, they are implemented by someone who used pointer for that.
+
+It is because of the simple arithmetic of pointers: you just need to incremnt and decrement them to jump back and forth in memory to reach different elements, so indexing is practically a slightly smarter wrapper to that.
+
+Not to mention, data in he stack needs to be fixed, so if you have dynamically growing data, you need heap alloaction, so you cannot achieve dynamic arrays without using pointers. Of course, this example has its standard wrapper: `std::vector`, so you don't need to implement it yourself with pointers.
+
+**Optional ("nullable") objects**
+
+In C++ you cannot have "none" or "null" as a value of a normal object, but if a pointer is set to 0, it's an invalid address. There are other ways of writing this: `NULL` is a preprocessor constant, meaning simply 0, and `nullptr` is a C++ keyword practically achieving the same result.
+
+This means, pointers can either have or not have a referenced value, havin a nullable type in C++.
+
+Therefore, if you need a nullable type, you need to use pointers.
+
+**Decouple compilation units to improve compilation time (see PIMPL idiom)**
+
+The useful property of a pointer is that you only require a forward declaration of the pointed-to type (to actually use the object, you’ll need a definition).
+
+Pracically if you use a dependency in a header file, you don't need to import its header if it's a pointer. If you use it as an object, you need the declarations of the class methods, but if it's a pointer, it's enough just so say `class MyClass;`.
+
+This allows you to decouple parts of your compilation process, which may significantly improve compilation time. See the [Pimpl idiom](https://en.wikipedia.org/wiki/Opaque_pointer).
+
+**Resource management other than memory, like files or databases**
+
+Pointers are useful for managing resources other than memory, such as file handles or database connections. You can create custom classes that encapsulate the resource and manage its lifecycle using pointers.
+
+**Callbacks and function pointers**
+
+Pointers to functions (or function pointers) are used when implementing callbacks, event handling, and for dynamically choosing which function to execute at runtime.
+
+Practically any time you need to pass a callable function from here to there, you need to have a poiner to the function. You cannot store functions "by value", because they do live in the memory (== have addresses, meaning you can have pointers that point to them), but hey are not data, so you cannot save them to simple variables.
+
+Side note: implementation of virtal functions use pointers, so whole polymorphism wouldn't be achieved without pointers.
+
+**You use external code that expects them**
+
+You need to interface with a C library or a C-style library. At this point, you’re forced to use raw pointers. The best thing you can do is make sure you only let your raw pointers loose at the last possible moment. You can get a raw pointer from a smart pointer, for example, by using its get member function. If a library performs some allocation for you which it expects you to deallocate via a handle, you can often wrap the handle up in a smart pointer with a custom deleter that will deallocate the object appropriately.
 
 ### `i++` vs `++i`
 
