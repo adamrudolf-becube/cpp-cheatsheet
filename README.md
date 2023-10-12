@@ -513,7 +513,7 @@ But why? When I learnt C++ I learned both of these rules, but they always confus
 
 Pointers are frequently used when working with arrays and data structures like linked lists, trees, and graphs. Pointers enable you to navigate and manipulate these structures efficiently. Even if you use arrays and never see pointers, they are implemented by someone who used pointer for that.
 
-It is because of the simple arithmetic of pointers: you just need to incremnt and decrement them to jump back and forth in memory to reach different elements, so indexing is practically a slightly smarter wrapper to that.
+It is because of the simple arithmetic of pointers: you just need to increment and decrement them to jump back and forth in memory to reach different elements, so indexing is practically a slightly smarter wrapper to that.
 
 Not to mention, data in he stack needs to be fixed, so if you have dynamically growing data, you need heap alloaction, so you cannot achieve dynamic arrays without using pointers. Of course, this example has its standard wrapper: `std::vector`, so you don't need to implement it yourself with pointers.
 
@@ -539,11 +539,13 @@ Pointers are useful for managing resources other than memory, such as file handl
 
 **Callbacks and function pointers**
 
-Pointers to functions (or function pointers) are used when implementing callbacks, event handling, and for dynamically choosing which function to execute at runtime.
+Pointers to functions (or function pointers) are used when implementing callbacks, event handling, and for dynamically choosing which function to execute at runtime. (As I mentioned actually the mechanism behind the `virtual` keyword is solved using funtion pointers.)
 
-Practically any time you need to pass a callable function from here to there, you need to have a poiner to the function. You cannot store functions "by value", because they do live in the memory (== have addresses, meaning you can have pointers that point to them), but hey are not data, so you cannot save them to simple variables.
+Practically any time you need to pass a callable function from here to there, you need to have a poiner to the function. Functions are stored in the memory, so you can have pointers to them, but they are not data, so you cannot save them to ordinary variables.
 
-Side note: implementation of virtal functions use pointers, so whole polymorphism wouldn't be achieved without pointers.
+*Note1*: some other languages, like JavaScript, you can save functions to "ordinary" variables, but they are pointers under the hood.
+
+*Note2*: implementation of virtal functions use pointers, so whole polymorphism wouldn't be achieved without pointers.
 
 **You use external code that expects them**
 
