@@ -331,7 +331,7 @@ It's a complex question, but here are some points you can start from.
 
 Normal objects and references are stored in the stack, while you might use pointers to refer to heap allocated objects. Note that a pointer can point to a stack allocated object too, if you alrady have it and set the pointer to its address.
 
-Heap allocation is slower, and we need to take care about deallocation, meaning that whenever you can, you should prefer stack allocated objects, meaning you should only use pointers when you have to.
+Heap allocation is slower, and we need to take care about deallocation, meaning that whenever you can, you should prefer stack allocated objects, therefore you should only use pointers when you have to.
 
 If you have to use pointers, prefer smart pointers, because thay at least take care of the memory management problem, but still have the problem with the worse performance.
 
@@ -358,19 +358,19 @@ Where the items on the left have higher priority. If you have a value, start on 
 - **When to use**: Passing value objects to other scopes when you don't need a copy and the use of the reference is within the lifetime of the referred object
     - E.g. pass const ref to functions so they can read the original data
     - Funciton parameters where the function has to change the original value
-    - Return a reference *when the referenced object's lifetime extends beyond the function call* (e.g. referencin a static variable)
-    - Often when overloading operators in user defined types
-    - Some classes have reference type data members when the class just needs to keep track of an external object (e.g. instance keeping a reference to a mediator)
+    - Return a reference *when the referenced object's lifetime extends beyond the function call* (e.g. referencing a static variable)
+    - Often when overloading operators in user defined types, like copy/move constructor/assignment operator
+    - Some classes have reference type data members when the class just needs to keep track of an external object (e.g. instance keeping a reference to a mediator). Value if I own it as internal implementation detail, reference if it lives outside the class but I need an address to reach it.
     - Aliasing: simply have different names for the same object if that improves readability
-    - Others might arise
+    - Other reasons might be also possible
 
 **Pointer**
 - Integer, storing memory address
 - Type is no bound to it, type only tells the compiler, how long the memory is (both void, int, long etc. poiners are just one integer, pointer points to the first byte, but pointed data usually occupies additional bytes)
-- When you initialize new data as opinter, it's always heap allocation
-- **When to use**: when an object or reference is not enough for your goals. Includint, but not limited to
+- When you initialize new data as poiner (`new` or `malloc`), it's always heap allocation
+- **When to use**: when an object or reference is not enough for your goals. Including, but not limited to
     - When a variable needs to survive the scope and you cannot use references
-    - When you need to achieve runime polymorphism
+    - When you need to achieve runtime polymorphism
     - Dynamic size arrays and data structures (actually static too)
     - Optional ("nullable") objects
     - Decouple compilation units to improve compilation time (see PIMPL idiom)
@@ -384,7 +384,7 @@ In the following parts I will explain these in more details.
 
 The following points are examples of typical cases when you would need pointers. Here I am alking about both smart and raw pointers, where you should always prefer smart pointers unless you have a reason to use raw ones.
 
-These examples are not complete, they just give you a gist of when using pointers is a better, or maybe only choice.
+These examples are not complete, they just give you a gist of he most typical cases when using pointers is a better, or maybe only choice.
 
 **When the variable needs to survive the scope**
 
@@ -395,6 +395,8 @@ You can move or copy the object. Copy is not performance effective, so you shoul
 You can also pass it by reference, and if you can, by all means, do that. But if the referenced object has ended its lifetime, using the reference might cause problems, so references are still somewhat bound to scopes.
 
 Moving means relabelling the owner without actually touching the object, and this can be achieved by pointers. See more about it at the section about [move semantics](#move-semantics).
+
+You can actually share it, remaining one of the owners, making the other function/class another owner, or you might just hand over a weak poiner so they can follow it but you remain the owner. All of these approaches need to use pointers, but some scenarios might have already written solutions that hide the pointers from you, like simply calling the move assigment operator.
 
 So use pointers if another scope needs to access exactly the same object, but not a copy of it, and you cannot use references, because they are still too restricted by the scope.
 
