@@ -21,13 +21,127 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 - `void functionName(variableType arrayName[length of array])`
 - `void functionName(variableType arrayName[])`
 
+### Heap vs stack
+
+Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
+
+There is one big piece of memory called **heap**. It lives during the entire time of the program, and pieces of data stored here are not connected to a specific function.
+
+On the other hand, when a scope is opened, for example the control goes into a function, an `if` block, or just an empty block, a new part of memory is allocated to store the local variables there, and it's called a **stack frame**. As soon as execution leaves the scope, the stack frame gets destroyed, and all the memory allocated in it gets automatically freed. The stack has a predefined size, usually around 2 MB.
+
+The heap and stack have different structure which results memory allocations to be much faster in the stack.
+
+Pointers are allocated in the heap (everything with the `new` keyword), while "normal" local variables are allocated in the stack.
+
+One advantage of the stack is this incomparably better performance. The other benefit is that its less error prone, because the allocated memory gets freed up automatically, while in case of heap allocation you need to do it yourself.
+
+The heap has some advantages over the stack: it's bigger, and anything stored in it survives the scope. Also, variables in the heap 
+
+> Rule of thumb: use the stack whenever you can. Meaning, you should use heap allocation 1) if you need data that survives the scope, or 2) you have data that is huge (like an image). Also you can only use the heap to allocate dynamicly growing data, like a `std::vector`.
+
+### What is "ownership"
+
+Raw pointers point to obects in the heap. They need to be manually deleted (i.e. memory needs to be freed to not cause a leak). When data is created and destroyed in the same scope, it's not complicaed, but in this case use of pointers is often not needed.
+
+Pointers are often passed down functions and complex features, or returned by a factory, and you need to keep track of whose job is it to delete it.
+
+> Ownership means “responsibility to cleanup”. The owner of the memory is the one who has to delete its pointer.
+
+Deletion can either be explicit (through the keyword delete of the function free() regarding raw pointers) or bound to the lifetime of an object (through smart pointers and RAII), meaning typically that an explicit deletion happens in the destructor of the owner.
+
+RAII (Resource Allocation Is Initilaization) is a concept of having stack allocaed objects owning heap allocated objects. They allocate memory in the contructor, and delete them in the destrucor. If in your client code you don't use the heap object direcly any more, only the stack object, you get rid of the coupling (i.e. your responsibility to not forget to delete if you allocated), as your objects will be deleted automatically when the scope ends. Smart pointers do exactly this for you, but it's totally okay to implement your own logic as an alternative to smart pointers, if you need to (don't reinvent the wheel).
+
+Ownership is not a builtin concept to the language, it's more like an approach to make sure heap allocated memory gets freed, and there is one or more entities at all times whose responsibility is to delete.
+
+In RAII the lifeime of the heap object is bound to the lifetime of a stack object, which means you loose the advanage of heap object surviving the scope. Except, in this case, the RAII object can get its internal poiner and hand it over to another object, like pass it to a function. This is called moving the ownership, but more about it later.
+
+More on that in this very good article: [Who owns the memory?](https://belaycpp.com/2022/03/17/who-owns-the-memory/)
+
 ### Copy semantics
 
 Copying the actual data of the object to another object rather than making another object to point the already existing object in the heap.
 
 ### Move semantics
 
-Move semantics involves pointing to the already existing object in the memory. It might include invlidating the original pointer, so the "original variable is destroyed".
+Move means moving [ownership](#what-is-ownership). Simply saying, moving an objec means that some part of the code has a pointer to it, then the other part of the code starts to point at it, then the original object releases it:
+
+To move a house from Alice to Bob has these steps:
+
+1. Alice: this is my house
+2. Bob: this is my house (now they both point at it)
+3. Bob: Alice, this is not your house any more (to be more precise: "your house" is a nothing from now on)
+
+From now on Bob can refer to the house's resources, and it's Bob's responsibility to delete the house when he doesn't need it any more. Alice doesn't need to think about deletion, it's not her job to prevent memory leaks any more.
+
+With this logic you can pass a complex object from one scope to another without copying or duplicating anything in the memory.
+
+*Note*: we often talk about moving as moving the data from one owner to another, while the whole point is to not touch the object physically in the memory. It might be confusing to say we use *move* so the data can stay where it is. So you can either think of moving as as abstract moving from one owner to another, or more like to move the ownership itself instead of the object itself, like referring to selling a house as "moving the house from one owner to another", but the house is actually not moving.
+
+While the concept is simple, C++ has builtin techniques to support this logic.
+
+#### rvalue reference
+
+Move semantics are highly bound to [rvalue references](#lvalue-vs-rvalue).
+
+To be short, an rvalue reference is a reference to point to a nameless, temporary object. As they are temporary, they are safe to be moved from.
+
+#### Move constructors and move assignment operators
+
+They are similar to the copy constructors and copy assignment operators.
+
+The technical difference is that they accept rvalue references.
+
+The semantic difference is that they should just start pointing to the resources of the object they got in the parameter ("stealing" its resources), and then invalidate the origin (creating a hollow object with `nullptr`s for example).
+
+In case of move assignment, it's important to check if the origin and destination is not the same (`&other != this`), otherwise when you make the origin release the resource, `this` releases them too so no one has the pointer any more.
+
+The original object might not get destroyed during the copy itself (Bob doesn't kill Alice by aquiring her car), the original's pointer gets invalidated. It means that Alice still has a pointer to a car, but it's an invalid nullpointer. So when Alice normally goes out of scope, she can safely delete her pointer, a.k.a. freeing up the resources she is pointing at, because that will not point to an actual address any more, and Bob can keep using the car after Alice died.
+
+Epmhasize again, that invalidating the original's pointer is important, because oherwise if the original owner goes out of scope it will probably try to delete the resource. If it still points to the resource, it will delete the real resource and the new owner will also be unable to use it.
+
+**Move constructor**
+```cpp
+MyClass(MyClass&& other) {
+    // Transfer resources from 'other' to 'this'
+}
+```
+
+**Move assignment operator**
+```cpp
+MyClass& operator=(MyClass&& other) {
+    if (this != &other) {
+        // Transfer resources from 'other' to 'this'
+    }
+    return *this;
+}
+```
+
+Move constructor is called when we assign a value to a newly created object, and move assignment operator is called when we assign to an already created object.
+
+```cpp
+MyClass my_object = std::move(something) // move constructor
+my_object = std::move(something_else) // move assignment operator
+```
+
+#### `std::move()`
+
+In pure terms of function overloading, if we want the move happen instead of copying, we need to call the constructor with an rvalue reference. It means, if we have an lvalue and want to move it, we first explicitly need to cast it to an rvalue reference. Practically that is exactly what `std::move()` does.
+
+```cpp
+MyClass origin;
+
+MyClass destination = origin; // Copy constructor is called
+
+MyClass destination = (MyClass&&)origin // Move constructor is called (or static_cast actually)
+
+MyClass destination = std::move(origin) // Essentially the same as above with nicer synax
+```
+
+Note: `std::move` doesn't actually move an object, it just creates a temporary object from it, so it is safe (and possible) to move from. In the above example the moving happens "in the `=` sign" and not in the `std::move`.
+
+#### Is move constructor and ass. operator and `std::move` the same as move semantics?
+
+No, move semantics is the concept of moving ownership while not touching the pointed at object in order to pass data around, instead of copying it by value. Move constructor, move assignment operator and `std::move` is just some language concepts to help with it, but you can implement your own solutions.
 
 ### Special member functions and their rules
 
@@ -159,24 +273,6 @@ Placeholders:
 
 Often there are multiple solutions to the same problem, that look similar, but have subtle differences
 
-### Heap vs stack
-
-Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
-
-There is one big piece of memory called **heap**. It lives during the entire time of the program, and pieces of data stored here are not connected to a specific function.
-
-On the other hand, when a scope is opened, for example the control goes into a function, an `if` block, or just an empty block, a new part of memory is allocated to store the local variables there, and it's called a **stack frame**. As soon as execution leaves the scope, the stack frame gets destroyed, and all the memory allocated in it gets automatically freed. The stack has a predefined size, usually around 2 MB.
-
-The heap and stack have different structure which results memory allocations to be much faster in the stack.
-
-Pointers are allocated in the heap (everything with the `new` keyword), while "normal" local variables are allocated in the stack.
-
-One advantage of the stack is this incomparably better performance. The other benefit is that its less error prone, because the allocated memory gets freed up automatically, while in case of heap allocation you need to do it yourself.
-
-The heap has some advantages over the stack: it's bigger, and anything stored in it survives the scope. Also, variables in the heap 
-
-> Rule of thumb: use the stack whenever you can. Meaning, you should use heap allocation 1) if you need data that survives the scope, or 2) you have data that is huge (like an image). Also you can only use the heap to allocate dynamicly growing data, like a `std::vector`.
-
 ### Pointer vs reference vs value object
 
 When to use which?
@@ -187,15 +283,69 @@ Value objects and references are stored in the stack, while pointers are stored 
 
 If you have to use pointers, prefer smart pointers, because thay at least take care of the memory management problem, but still have the problem with the worse performance.
 
-So when do I need to use pointers?
+General rule of thump, for both performance and safety reasons, prefer your values like this:
+
+> value < reference < smart pointers (unique < shared) < raw pointers
+
+Where the items on the left have higher priority. If you have a value, start on the left, and if you cannot reasonably solve your problem with the concept, step one right.
+
+**Normal variable (value object)**
+- Lives in the stack
+- Quick to initialize (fast memory allocation)
+- Automatic lifetime management (gets destroyed and memory freed when the scope ends with `}`)
+- **When to use**: all the time when you don't have reason not to
+
+**Rerefence**
+- Wrapper around pointer (pointer with simplified syntax and some restrictions)
+- No need to dereference or use "address of", can be used as a variable
+- Unlike pointers, you cannot initialize a new one, only to point to an existing value
+- Once a reference is initialized, you cannot change it (i.e. you cannot change what it refers too, but of course you can change the referred value)
+- Not a copy, not a new address
+- Practically works as the referred value, an alias
+- `const` reference means you cannot change the referred value (unlike a `const` pointer where it's the pointer itself that's `const`)
+- **When to use**: Passing value objects to other scopes when you don't need a copy and the use of the reference is within the lifetime of the referred object
+    - E.g. pass const ref to functions so they can read the original data
+    - Funciton parameters where the function has to change the original value
+    - Return a reference *when the referenced object's lifetime extends beyond the function call* (e.g. referencin a static variable)
+    - Often when overloading operators in user defined types
+    - Some classes have reference type data members when the class just needs to keep track of an external object (e.g. instance keeping a reference to a mediator)
+    - Aliasing: simply have different names for the same object if that improves readability
+    - Others might arise
+
+**Pointer**
+- Integer, storing memory address
+- Type is no bound to it, type only tells the compiler, how long the memory is (both void, int, long etc. poiners are just one integer, pointer points to the first byte, but pointed data usually occupies additional bytes)
+- When you initialize new data as opinter, it's always heap allocation
+- **When to use**: when an object or reference is not enough for your goals. See exampes in the upcoming parts.
+
+#### When to use pointers
+
+The following points are examples of typical cases when you would need pointers. Here I am alking about both smart and raw pointers, where you should always prefer smart pointers unless you have a reason to use raw ones.
+
+These examples are not complete, they just give you a gist of when using pointers is a better, or maybe only choice.
 
 **When the variable needs to survive the scope**
 
-If you pass around heavy objects between differenc scopes, for example construct something within a funciton and you return it, or the other way around, you need to pass something in to a function, there are multiple options for you.
+If you pass around heavy objects between different scopes, for example construct something within a function and you return it, or the other way around, you need to pass something in to a function, there are multiple options for you.
 
 You can move or copy the object. Copy is not performance effective, so you should avoid it if poissible.
 
-If you can move, that is fine
+You can also pass it by reference, and if you can, by all means, do that. But if the referenced object has ended its lifetime, using the reference might cause problems, so references are still somewhat bound to scopes.
+
+
+Moving means relabelling the owner without actually touching the object, and this can be achieved by pointers.
+
+So use pointers if another scope needs to access exactly the same object, but not a copy of it.
+
+**You need polymorphism**
+
+If you need polymorphic behaviour, you need pointers.
+
+It means that a piece of code can work on different classes that have a common base class. It refers to the data *as* the base class (handling animals instead of cats or dogs), but runtime it will be one of the child classes, but we don't know which.
+
+You want to call a funciton on this class, and you want each of your child classes to implement their own funciton.
+
+In C++ in this case the child classes function is not automatically called. The base class has to declare the function as virtual, and 
 
 
 ### `i++` vs `++i`
