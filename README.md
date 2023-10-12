@@ -76,7 +76,7 @@ See also `memcpy`, a function that does a bitwise copy regardless of types or nu
 
 ### Move semantics
 
-Move means moving [ownership](#what-is-ownership). Simply saying, moving an objec means that some part of the code has a pointer to it, then the other part of the code starts to point at it, then the original object releases it:
+Move means moving [ownership](#what-is-ownership). Simply saying, moving an object means that some part of the code has a pointer to it, then the other part of the code starts to point at it, then the original object releases it:
 
 To move a house from Alice to Bob has these steps:
 
@@ -88,7 +88,7 @@ From now on Bob can refer to the house's resources, and it's Bob's responsibilit
 
 With this logic you can pass a complex object from one scope to another without copying or duplicating anything in the memory.
 
-*Note*: we often talk about moving as moving the data from one owner to another, while the whole point is to not touch the object physically in the memory. It might be confusing to say we use *move* so the data can stay where it is. So you can either think of moving as as abstract moving from one owner to another, or more like to move the ownership itself instead of the object itself, like referring to selling a house as "moving the house from one owner to another", but the house is actually not moving.
+*Note*: we often talk about moving as moving the data from one owner to another, while the whole point is to not touch the object physically in the memory. It might be confusing to say we use *move* so the data can stay where it is. So you can either think of moving as as abstract moving from one owner to another, or more like to move the ownership rather than the object itself, like referring to selling a house as "moving the house from one owner to another", while the house is actually not pysically moving.
 
 While the concept is simple, C++ has builtin techniques to support this logic.
 
@@ -96,19 +96,19 @@ While the concept is simple, C++ has builtin techniques to support this logic.
 
 Move semantics are highly bound to [rvalue references](#lvalue-vs-rvalue).
 
-To be short, an rvalue reference is a reference to point to a nameless, temporary object. As they are temporary, they are safe to be moved from.
+To be short, an rvalue reference is a reference to a nameless, temporary object. As they are temporary, they are safe to be moved from.
 
 #### Move constructors and move assignment operators
 
 They are similar to the copy constructors and copy assignment operators.
 
-The technical difference is that they accept rvalue references.
+The technical difference is that - while copy operations accept reference or the object itself, a.k.a. lvalues, - the move operations accept rvalue references. Again: **copy: lvalue, move: rvalue**.
 
-The semantic difference is that they should just start pointing to the resources of the object they got in the parameter ("stealing" its resources), and then invalidate the origin (creating a hollow object with `nullptr`s for example).
+The semantic difference is that they should just start pointing to the resources of the object they got in the parameter ("stealing" its resources), and then invalidate the origin (creating a hollow object with `nullptr`s).
 
 In case of move assignment, it's important to check if the origin and destination is not the same (`&other != this`), otherwise when you make the origin release the resource, `this` releases them too so no one has the pointer any more.
 
-The original object might not get destroyed during the copy itself (Bob doesn't kill Alice by aquiring her car), the original's pointer gets invalidated. It means that Alice still has a pointer to a car, but it's an invalid nullpointer. So when Alice normally goes out of scope, she can safely delete her pointer, a.k.a. freeing up the resources she is pointing at, because that will not point to an actual address any more, and Bob can keep using the car after Alice died.
+The original object owner does not get destroyed during the copy itself (Bob doesn't kill Alice by aquiring her house), but the original's pointer gets invalidated. It means that Alice still has a pointer to a house, but it's an invalid nullpointer. So when Alice normally goes out of scope, she can safely delete her pointer, a.k.a. freeing up the resources she is pointing at, because that will not point to an actual address any more, like sending the demolition crew to a nonexistend address. They will no destroy any houses. Bob can keep using the house.
 
 Epmhasize again, that invalidating the original's pointer is important, because oherwise if the original owner goes out of scope it will probably try to delete the resource. If it still points to the resource, it will delete the real resource and the new owner will also be unable to use it.
 
@@ -138,21 +138,21 @@ my_object = std::move(something_else) // move assignment operator
 
 #### `std::move()`
 
-In pure terms of function overloading, if we want the move happen instead of copying, we need to call the constructor with an rvalue reference. It means, if we have an lvalue and want to move it, we first explicitly need to cast it to an rvalue reference. Practically that is exactly what `std::move()` does.
+In pure terms of function overloading, if we want the move happen instead of copying, we need to call the constructor with an rvalue reference. That's how the compiler can distinguish which one we are trying to use. It means, if we have an lvalue and want to move it, we first explicitly need to cast it to an rvalue reference. Practically that is exactly what `std::move()` does.
 
 ```cpp
 MyClass origin;
 
 MyClass destination1 = origin; // Copy constructor is called
 
-MyClass destination2 = (MyClass&&)origin // Move constructor is called (or static_cast actually)
+MyClass destination2 = (MyClass&&)origin // Move constructor is called
 
-MyClass destination3 = std::move(origin) // Essentially the same as above with nicer synax
+MyClass destination3 = std::move(origin) // Essentially the same as above with nicer synax (actually static_cast under the hood)
 ```
 
 Note: `std::move` doesn't actually move an object, it just creates a temporary object from it, so it is safe (and possible) to move from. In the above example the moving happens "in the `=` sign" and not in the `std::move`.
 
-#### Is move constructor and ass. operator and `std::move` the same as move semantics?
+#### Are move constructor and ass. operator and `std::move` the same as move semantics?
 
 No, move semantics is the concept of moving ownership while not touching the pointed at object in order to pass data around, instead of copying it by value. Move constructor, move assignment operator and `std::move` is just some language concepts to help with it, but you can implement your own solutions.
 
@@ -205,7 +205,7 @@ Similar rules apply to the move constructor and move assignment operator as well
 
 Prefer move if you don't have a reson to copy as it's incomparably faster. Ever case is different, but some rules of thumb you can use move, if 1) you don't need to modify the value, or 2) if you actually want to make changes to the original value.
 
-#### Can I implement move semantics in a copy contructor? Or are these magically enforced?
+#### Can I implement move semantics in a copy constructor? Or are these magically enforced?
 
 With other words, can I misuse the intention of any of these?
 
@@ -228,18 +228,17 @@ Copies value:
 ### Method pre- and postfixes
 
 - `virtual`: the child classes method will be called even if you call it as a pointer to the base class. In case of a non-virtual method, the base classes method will be called. Mostly used to achieve runtime polymorphism.
-    - Why do I need to explicitly mark something as `virtual`? Why is "no polymorphsm" default behaviour, if runtime polymorphism seems to be one of the main reasons to have inheritance?
-    - Virtual functions have some overhead and additioal complexity. The compiler needs to generate an array keeping track of function pointers, and pointers to follow references in order to find the implementation. This is called dynamic, or late, or runtime binding. On the other hand non-virtual functions are bound at compile time which is simpler and more efficient.
+    - Question: Why do I need to explicitly mark something as `virtual`? Why is "no polymorphsm" default behaviour, if runtime polymorphism seems to be one of the main reasons to have inheritance?
+    - Answer: Virtual functions have some overhead and additioal complexity. The compiler needs to generate an array (VTABLE) keeping track of function pointers, and pointers (VPTR) to follow references in order to find the implementation. This is called dynamic, or late, or runtime binding. On the other hand non-virtual functions are bound at compile time which is simpler and more efficient.
     - But this usually doesn't cause a visible overhead
     - In Java every function is virtual by default, unless you mark it as final. So this is simply a choice of C++
 - `static`: method doesn't get the `this` pointer as a hidden parameter. Function belongs to class instead of object instances. Can be used with or without instantiation.
 - ` = 0` : a function is pure virtual and you cannot instantiate an object from this class. You need to derive from it and implement this method. You cannot declare a class abstract explicitly, but any class containing pure virtual methods are abstract. Only virtual functions can be pure virtual.
-- ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the equal operator and copy constructor to prohibit copying)
+- ` = delete` : prohibiting calling (mostly used for disabling default behaviour, for example delete construction of singletons or delete the copy assignment operator and copy constructor to prohibit copying)
     - Any use of a deleted function is ill-formed (the program will not compile).
     - You can prohibit some default behavior, for example normally you can copy a class even if you don't explicitly specify a copy constructor. By deleting the copy constructor you can explicitly prohibit copying.
 - `= default` : you can mark a function explicitly to use the default, compiler implemented version. This is redundant, same as not writing the whole thing at all. This just helps you to see what's happening so you don't have to know the rules by heart. See [Special member functions and their rules](###Special-member-functions-and-their-rules)
 - `explicit` : The explicit specifier specifies that a constructor or conversion function (since C++11) doesn't allow implicit conversions or copy-initialization.
-const : this pointer becomes const. This function cannot modify the variables.
 - `const` : the `this` pointer is const meaning the member function (method) cannot change the class members (prefer this if possible)
 
 There are others, like `noexcept` these are the ones I found important to note down for myself.
@@ -247,9 +246,11 @@ There are others, like `noexcept` these are the ones I found important to note d
 ### Instantiate an object
 
 ```cpp
-Entity entity; // Calls the default constructor (not null or something). Note that later initialization might be double work. Same as Entity entity();
+Entity entity(); // Calls the default constructor. Note that later initialization might be double work.
 
-Entity entity = Entity("something") // Calls the specified constructor, then copies the created object to the newly created entity. Note that the constructor is called many times, so it's not efficient.
+Entity entity; // Exactly the same as above. Not uninitialized, initialized by default constructor.
+
+Entity entity = Entity("something") // Calls the specified constructor, then copies the created object to the newly created entity. Note that the constructor is called twice: 1) creating Entity on the right side, and then copying it to 'entity' by copy constructor. Not optimal.
 
 Entity entity("somethign") // Same as above, just shorter in code
 
@@ -259,16 +260,18 @@ Entity entity{"something"} // Called "uniform initialization". Object is initial
 
 int a{5}; // equals to int a = 5;
 
-// Smart pointers (see their own sectin)
-
-// TODO
+// Smart pointers
+std::shared_ptr<Entity> entity("something");
+std::shared_ptr<Entity> entity = std::make_shared<Entity>("something") // preferred
 ```
 
 See more about uniform initialization here: https://www.geeksforgeeks.org/uniform-initialization-in-c/
 
 #### Some notes about instantiation
 
-Thing about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. (Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place)
+A note about performance. If you create an object, and initialize it later, a copy or reassignment can happen. Do it in 1 step. 
+
+Similar applies for initializer lists. They are better to be used, because setting members inside the constructor would mean duoble work: creating the object with default values, then reassign those values, while initializer list creates the object with the given values in the first place.
 
 ### The `static` keyword
 
