@@ -329,7 +329,9 @@ When to use which?
 
 It's a complex question, but here are some points you can start from.
 
-Value objects and references are stored in the stack, while pointers are stored on the heap. Heap allocation is slower, and we need to take care about deallocation, meaning that whenever you can, you should prefer stack allocated objects, meaning you should only use pointers when you have to.
+Normal objects and references are stored in the stack, while you might use pointers to refer to heap allocated objects. Note that a pointer can point to a stack allocated object too, if you alrady have it and set the pointer to its address.
+
+Heap allocation is slower, and we need to take care about deallocation, meaning that whenever you can, you should prefer stack allocated objects, meaning you should only use pointers when you have to.
 
 If you have to use pointers, prefer smart pointers, because thay at least take care of the memory management problem, but still have the problem with the worse performance.
 
