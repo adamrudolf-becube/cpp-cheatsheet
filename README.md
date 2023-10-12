@@ -130,11 +130,11 @@ In pure terms of function overloading, if we want the move happen instead of cop
 ```cpp
 MyClass origin;
 
-MyClass destination = origin; // Copy constructor is called
+MyClass destination1 = origin; // Copy constructor is called
 
-MyClass destination = (MyClass&&)origin // Move constructor is called (or static_cast actually)
+MyClass destination2 = (MyClass&&)origin // Move constructor is called (or static_cast actually)
 
-MyClass destination = std::move(origin) // Essentially the same as above with nicer synax
+MyClass destination3 = std::move(origin) // Essentially the same as above with nicer synax
 ```
 
 Note: `std::move` doesn't actually move an object, it just creates a temporary object from it, so it is safe (and possible) to move from. In the above example the moving happens "in the `=` sign" and not in the `std::move`.
@@ -257,7 +257,26 @@ Thing about performance. If you create an object, and initialize it later, a cop
 
 ### Smart pointers
 
-- 
+- `std::unique_ptr`
+    - single owner of the underlying data
+    - `std::unique_ptr<SomeObject> a = std::make_unique(SomeObject(...))`
+    - you can directly construct it via consructor and pass it a `new`, but for exception safety, syntax and sometimes performance reasons `make_...` is preferred
+    - cannot be copied
+    - use this unless you have a reason to use `std::shared_ptr`
+    - `.release()` releases the object and returns a raw pointer
+- `std::shared_ptr`
+    - reference counting, resource is released when *all* owners go out of scope or given up ownership
+    - `std::shared_ptr<Object> p1 = std::make_shared<Object>("foo");`
+    - Same comment here about `make_shared` vs constructor using `new`
+- `std::weak_ptr`
+    - used together with `std::shared_ptr`, but doesn't participate in referecne counting
+    - because of it it might point to an expired value (see `.expired()` bool function)
+    - If you want to use it, call `.lock()` that returns a shared pointer to the pointed object, or a default shared pointer if it's expired. Returned value can be used in an if statement to check validity.
+- all
+    - `.get()` returns the wrapped raw pointer
+    - `.reset();` to release resource or set it to a new target
+
+Note: `auto_ptr` is an deprecated and buggy approach that has been replaced by `unique_ptr` in C++11.
 
 ## `std::bind`
 
