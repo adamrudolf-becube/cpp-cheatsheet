@@ -1240,7 +1240,7 @@ This means they have different mechanisms in the background: `i++` needs to copy
 
 In case of most POD types, like a plain `int`, a type which with the `++` operator is probably most used, it doesn't cause a visible difference, especially because most compilers can quite smart optimize it.
 
-On the other hand you can use `++` operator with more complex data types, you can define it on any class. In case of more complex data types move semantics migth become a considerable overhead, so there might be cases where `i++` should be avoided unless you specifically need it.
+On the other hand you can use `++` operator with more complex data types, you can define it on any class. In case of more complex data types copy semantics migth become a considerable overhead, so there might be cases where `i++` should be avoided unless you specifically need it.
 
 Short summary: performance-wise `++i` might be faster in some cases, but never slower, but in most of the cases it just doesn't matter.
 
