@@ -594,6 +594,32 @@ You can get by without using pointers for a while, but they are quite central co
 
 I have created a practical guide when to use a variable, when to use a reference and when to use a pointer here: [Pointer vs reference vs value object](#pointer-vs-reference-vs-value-object)
 
+### If only the contents of data is saved in memory, where and how does C++ store type information?
+
+When you create a pointer, it's just one `int`. Regardless of whether it's an `int` pointer, a `float` pointer, or a pointer to a complex type, what actually is saved to the memory is only the memory address the poniter contains.
+
+Also, if you have a class with members `int` and `float`, it takes up exactly as much space as an `int` and a `float` combined. Where is the information that it's a class? That these are tied together?
+
+So is there a magical lookup table to map variables to types?
+
+No. It's important to understand the different stages how your C++ source code gets translated into machine code.
+
+The machine code doesn't check types at all. It just looks up data at certain memory addresses and does some calculations with it, and saves them to other memory addresses.
+
+How do you know that the input data is correctly formed and the operation will not crash? How do you know that, when you save something, it's not too long, overwriting some other useful data with it's "long tail"?
+
+Well, normally, if you are an assembly developer, you need to make sure of it. You are a responsible programmer, who can write code that breaks, but you should be smart enough to know how to write code that doesn't.
+
+The compiler is kind enough to make some checks for us. If you make certain mistakes, the copmpiler refuses to compile the code, so it kind of guarantees that *if* it gerenates machine code, it is free from certain types of errors. One of the most important part of it is type info.
+
+It makes sure only compatible types are used, and pointers in the memory are always moved to the correct addresses, making sure a correct amount of memory is allocated for every type.
+
+However, this process is not perfect. The compiler might let through certain errors, for example when you use explicit C-style casting. The compiler just assumes you know what you are doing and accepts it. That's why `static_cast` is preferred: it can do additional compile time checks to avoid some errors. Also, if you try to dereference a dangling or null pointer, is this kind of an error. You also cannot know types at compile time sometimes when union types are involved.
+
+There is one case where C++ does store the type of an object: if the class of the object has any virtual methods (a “polymorphic type”, aka. interface). The target of a virtual method call is unknown at compile time and is resolved at run time based on the dynamic type of the object (“dynamic dispatch”). Most compilers implement this by storing a virtual function table (“vtable”) at the start of the object. The vtable can also be used to get the type of the object at runtime. We can then draw a distinction between the compile-time known static type of an expression, and the dynamic type of an object at runtime.
+
+But it's important, type has only meaning for the compiler. After that, it's really just moving pointers in the memory. So after the compiler has performed those checks, type information is thrown away.
+
 ### What is this "heap" and "stack" everyone is talking about but no one explains?
 
 Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
@@ -830,6 +856,8 @@ Then a poiner called `VPTR` is then generated for each object instance. This poi
 Again, this is written in simple C++ code, but the compiler generates that code for you.
 
 In case of "normal" (i.e. non-virtual) functions, this whole thing is not needed, and it should be unambigous at compile (actually linking) time, which function to call. It's much simpler, and doesn't need any special mechanism like the virtual functions do.
+
+Note that the C++ standard doesn't specify how virtual functions should be implemented, so this way of implementation is just one of the possible, and usual ways, but in theory it can be different. Point is, *some* similar runtime lookup mechanism needs to be implemented for virtual functions.
 
 When you write the `virtual` keyword, you are asking the compiler to generate this mechanism for you.
 
