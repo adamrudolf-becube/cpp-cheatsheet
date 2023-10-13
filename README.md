@@ -610,7 +610,7 @@ How do you know that the input data is correctly formed and the operation will n
 
 Well, normally, if you are an assembly developer, you need to make sure of it. You are a responsible programmer, who can write code that breaks, but you should be smart enough to know how to write code that doesn't.
 
-The compiler is kind enough to make some checks for us. If you make certain mistakes, the copmpiler refuses to compile the code, so it kind of guarantees that *if* it gerenates machine code, it is free from certain types of errors. One of the most important part of it is type info.
+The compiler is kind enough to make some checks for us. If you make certain mistakes, the compiler refuses to compile the code, so it kind of guarantees that *if* it gerenates machine code, it is free from certain types of errors. One of the most important part of it is type info.
 
 It makes sure only compatible types are used, and pointers in the memory are always moved to the correct addresses, making sure a correct amount of memory is allocated for every type.
 
