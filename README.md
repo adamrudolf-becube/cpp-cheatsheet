@@ -586,9 +586,9 @@ Every C++ file will be treated as a translation unit an will be resolved as a ob
 
 First of all, they are *not* fine without them. Every language uses pointers, they just take care of them for you in the background.
 
-Asking why C++ use pointers if other languages are fine without them, is the same as, after driving a car with automatic transmission for year and then sitting in a manual, asking "why this car has a gearbox if the other car was fine without it?". The previous car had a gearbox too, it just changed gears for you, so you didn't even have to know about it.
+Asking why C++ use pointers if other languages are fine without them, is the same as, after driving a car with automatic transmission for years and then sitting in a manual, asking "why this car has a gearbox if the other car was fine without it?". The previous car had a gearbox too, it just changed gears for you, so you didn't even have to know about it.
 
-C++ gives you explicit control over how you want to handle your data.
+C++ gives you explicit control over how you want to handle your data. This might be a blessing and a curse. But if it's a curse, you might not need them at all, it's probably okay in your situation to use another programming language, because you don't want to exploit the advantages of C++.
 
 You can get by without using pointers for a while, but they are quite central concept of C++, so it's better to learn them.
 
