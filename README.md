@@ -206,7 +206,7 @@ So why we had to discuss all the mechanisms with linkers and magic dependency re
 
 No. You would very soon get an error.
 
-#### Why cannot I just define a function and include it? - introducing the header files
+#### Why cannot I just define a function and include it? - Why do we need to use header files in C++?
 
 If you define a function called `log()` in `log.cpp`, and then include it in the `main.cpp`, you will get an error. Being super experienced in Python, JavaScript, TypeScript, Java, C# and even PHP you are confused. Isn't this how you should publish your code?
 
@@ -582,7 +582,19 @@ C++ doesn't care about files, file structure has no meaning to C++. (Unlike in J
 
 Every C++ file will be treated as a translation unit an will be resolved as a object file. It is possible tough to include one `.cpp` file to another and compile them as one translation unit.
 
-### Heap vs stack
+### Why do I need to use pointers in C++ if other languages are totally fine without them?
+
+First of all, they are *not* fine without them. Every language uses pointers, they just take care of them for you in the background.
+
+Asking why C++ use pointers if other languages are fine without them, is the same as, after driving a car with automatic transmission for year and then sitting in a manual, asking "why this car has a gearbox if the other car was fine without it?". The previous car had a gearbox too, it just changed gears for you, so you didn't even have to know about it.
+
+C++ gives you explicit control over how you want to handle your data.
+
+You can get by without using pointers for a while, but they are quite central concept of C++, so it's better to learn them.
+
+I have created a practical guide when to use a variable, when to use a reference and when to use a pointer here: [Pointer vs reference vs value object](#pointer-vs-reference-vs-value-object)
+
+### What is this "heap" and "stack" everyone is talking about but no one explains?
 
 Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
 
@@ -620,7 +632,7 @@ The heap has some advantages over the stack: it's bigger, and anything stored in
 
 > Rule of thumb: use the stack whenever you can. Meaning, you should use heap allocation 1) if you need data that survives the scope, or 2) you have data that is huge (like an image). Also you can only use the heap to allocate dynamicly growing data, like a `std::vector`.
 
-### What is "ownership"
+### What does "ownership" exactly mean?
 
 Raw pointers point to obects in the heap. They need to be manually deleted (i.e. memory needs to be freed to not cause a leak). When data is created and destroyed in the same scope, it's not complicated, but in this case use of pointers is often not needed.
 
