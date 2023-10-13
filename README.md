@@ -32,13 +32,33 @@ In C++ you cannot pass an array to a function. However, there are three methods 
 
 Our variables live in the memory. The memory has different parts. 2 of them are important to us: heap and stack.
 
+#### Heap
+
 There is one big piece of memory called **heap**. It lives during the entire time of the program, and pieces of data stored here are not connected to a specific function.
 
-On the other hand, when a scope is opened, for example the control goes into a function, an `if` block, or just an empty block, a new part of memory is allocated to store the local variables there, and it's called a **stack frame**. As soon as execution leaves the scope, the stack frame gets destroyed, and all the memory allocated in it gets automatically freed. The stack has a predefined size, usually around 2 MB.
+#### Stack
+
+On the other hand, when a scope is opened, for example the control goes into a function, an `if` block, or just an empty block, a new part of memory is allocated to store the local variables there, and it's called a **stack frame**. As soon as execution leaves the scope, the stack frame gets destroyed, and all the memory allocated in it gets automatically freed. C++ makes sure that all the destructors are called automatically on reaching the closing brace `}`. The stack has a predefined size, usually around 2 MB.
+
+The stack works as a LIFO (last-in-first-out) register, that's why it's called stack, meaning the first stack frame to be destroyed is the one which was created last time. For example the function that will return next is the one that was called last.
+
+A stack frame is where the local variables live (except `static`, but don't confuse outselfes now). If you call the same function many times, for example in a recursive algorithm, all the function calls have their own instances of the local variables, because every function call has its own stack frame. This is how the eariler calls can remember their own values.
+
+#### Comparison
 
 The heap and stack have different structure which results memory allocations to be much faster in the stack.
 
-Pointers are allocated in the heap (everything with the `new` keyword), while "normal" local variables are allocated in the stack.
+Every new pointer initialized with the `new` keyword or using `malloc` is allocated on the stack, while "normal" local variables are allocated in the stack.
+
+Note that not all pointers are pointing to heap allocated data. You can create something on the stack, and it's totally normal to have pointers to point to them.
+
+```cpp
+MyClass* my_heap_object = new MyClass(); // Heap allocation
+
+MyClass my_stack_object = MyClass(); // Stack allocation
+
+MyClass* my_stack_pointer = &my_stack_object; // Pointer pointing to a stack allocated object
+```
 
 One advantage of the stack is this incomparably better performance. The other benefit is that its less error prone, because the allocated memory gets freed up automatically, while in case of heap allocation you need to do it yourself.
 
