@@ -8,10 +8,17 @@ This document isn't meant to be complete, and isn't meant to be used as learning
 
 ## Basics
 
-### Pointer basics
+### `*` and `&` basics
 - `*` -> **dereference** a.k.a. "pointed value". E.g. variable `a` is a pointer, `*a` is the value pointed at
-- `*` is also declaring a variable that is meant to a pointer: `int *a` => `a` is a pointer to an `int`
+- `*` is also declaring a variable that is meant to a pointer: `int *a` => `a` is a pointer to an `int`. Space placing doesn't matter, these are all the same:
+    - `int* a;`
+    - `int *a;`
+    - `int * a;`
 - `&` **reference** i.e. "address of": `a = 54` -> `&a` is the address, where the value `54` is stored at
+- `&` is also declaring a variable that is a reference: `int& b = a;`. Space placing doesn't matter, these are all the same:
+    - `int& b = a;`
+    - `int &b = a;`
+    - `int & b = a;`
 
 ### Pass array reference to a function
 
