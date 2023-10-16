@@ -1306,6 +1306,27 @@ dogs.emplace_back(Dog{16, "Einstein"}) // Same, creates a temporary dog, and cop
 dogs.emplace_back(16, "Einstein"); // Quicker, creates only one object already in the vector
 ```
 
+### `enum` vs `enum class`
+
+**Enum**
+
+- `enum roll_no {satya = 70, aakanskah = 73};`
+- Two `enum`s cannot have members with the same name
+- No variable can be named as a name that alraedy exists in an `enum`
+- No typesafe: compliper doesn't complain if you test 2 different types of `enum`s to equality. Can be evaluated to true if the underlying ints are true
+- Implicitly convert to `int`
+
+**Enum Class**
+
+- Declaration: `enum class EnumName{ Value1, Value2, ... ValueN};`
+- Initialization: `EnumName ObjectName = EnumName::Value;`
+- Strongly typed (2 enum classes only render to equal if they are the same type)
+- Strongly scoped (2 enum classes can have members with the same name)
+- Since C++11
+- No implicit conversion allowed
+
+There is no performance difference between the two, so enum classes should be preferred as they are safer.
+
 ### Include guard vs `#pragma once`
 
 Both solutions protect from the case when you include the same file twice, causing double definition. These two are mechanisms to ensure, if a certain file has been already included, and is included again, then nothing will happen.
