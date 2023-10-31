@@ -1408,6 +1408,14 @@ Contrary to other claims, the `\n` character is mapped to the correct platform e
 
 ([Via](https://stackoverflow.com/questions/213907/stdendl-vs-n))
 
+### STL vs Standard Library
+
+STL stands for Standard Template Library,  which is not exactly the same as Standard Library. STL was written by Alexander Stepanov long before C++ was standardised. Then, when a standard was created, they included some parts of the STL (and developed them further), and indlucded other things outside the STL as well as left things out of the STL. While STL lives on independently from the C++ standard, the overlapping parts continue to be developed independently.
+
+But be careful, many people, including prominent and mainstream authors refer to the standard C++ library as STL. There are different schools of toughs, to be short: some people think it's incorrect, some think it's not.
+
+Conclusion: STL and Standard Library highly overlap, but none is a superset of the other. While they are different entities, some people use the term STL interchangably.
+
 ## Rules of thumb
 
 There are some basic rules to improve performance or error proneness. These can always be broken, so use them with understanding the whys and always consider alternatives. You can use it as a review or self-check checklist.
